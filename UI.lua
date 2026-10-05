@@ -266,7 +266,7 @@ local function BuildFrame()
         e:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
         return e
     end
-    minEdit = MakeEdit(lbl, 12)
+    minEdit = MakeEdit(lbl, 20)
     local tilde = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     tilde:SetPoint("LEFT", minEdit, "RIGHT", 4, 0)
     tilde:SetText("~")
@@ -352,7 +352,7 @@ local function BuildFrame()
 
     status = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     status:SetPoint("BOTTOMLEFT", 20, 18)
-    status:SetPoint("BOTTOMRIGHT", -20, 18)
+    status:SetPoint("BOTTOMRIGHT", -132, 18)
     status:SetJustifyH("LEFT")
     status:SetWordWrap(false)
 
