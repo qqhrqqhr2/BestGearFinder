@@ -184,6 +184,7 @@ local en = {
     ["회복 (힐)"] = "Restoration (Heal)",
     ["획득처 (CMaNGOS)"] = "Sources (CMaNGOS)",
     ["후원"] = "Support",
+    ["언어"] = "Language",
     ["흑마법사 (딜)"] = "Warlock (DPS)",
     ["희귀"] = "Rare",
 }

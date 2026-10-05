@@ -294,6 +294,44 @@ local function BuildFrame()
     end)
     frame:HookScript("OnHide", function() perMenu:Hide() end)
 
+    -- 언어 드롭다운 (자동 / 한국어 / English) — 선택하면 UI를 다시 불러옵니다
+    local langBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    langBtn:SetSize(96, 20)
+    langBtn:SetPoint("RIGHT", perBtn, "LEFT", -6, 0)
+    langBtn:SetText(L["언어"] .. " ▼")
+    local langMenu = CreateFrame("Frame", nil, frame, template)
+    langMenu:SetFrameStrata("DIALOG")
+    langMenu:SetSize(96, 3 * 20 + 16)
+    langMenu:SetPoint("TOPRIGHT", langBtn, "BOTTOMRIGHT", 0, -2)
+    langMenu:SetBackdrop({
+        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    SolidBG(langMenu)
+    langMenu:Hide()
+    local langOpts = { { nil, "Auto" }, { "ko", "한국어" }, { "en", "English" } }
+    for i, o in ipairs(langOpts) do
+        local b = CreateFrame("Button", nil, langMenu)
+        b:SetSize(86, 20)
+        b:SetPoint("TOPLEFT", 5, -8 - (i - 1) * 20)
+        local t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        t:SetPoint("CENTER")
+        t:SetText(o[2])
+        b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+        b:SetScript("OnClick", function()
+            langMenu:Hide()
+            ns.db.lang = o[1]
+            if ns.SetLang then ns.SetLang(o[1]) end
+            if ReloadUI then ReloadUI() end
+        end)
+    end
+    langBtn:SetScript("OnClick", function()
+        if langMenu:IsShown() then langMenu:Hide() else langMenu:Show() end
+    end)
+    frame:HookScript("OnHide", function() langMenu:Hide() end)
+
     -- 요구 레벨 범위 입력 줄
     local lbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     lbl:SetPoint("TOPLEFT", 20, -66)
