@@ -39,6 +39,7 @@ local function InitDB()
         end
     end
     ns.db = db
+    if ns.SetLang then ns.SetLang(db.lang) end
 end
 
 function ns:CharKey() return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") end
@@ -831,6 +832,13 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         db.auction = not db.auction
         Print(L["월드 드랍(저확률 잡몹 드랍) 포함: "] .. (db.auction and L["켜짐"] or L["꺼짐"]))
         ns:Refresh(true)
+    elseif msg:match("^lang") or msg:match("^언어") then
+        local a = msg:match("^%S+%s+(%S+)")
+        if a == "en" or a == "ko" then db.lang = a
+        elseif a == "auto" or a == "자동" then db.lang = nil
+        else Print("/bgf lang en | ko | auto") return end
+        ns.SetLang(db.lang)
+        Print("Language: " .. (db.lang or "auto") .. " -> /reload")
     elseif msg == "icon" or msg == "아이콘" then
         db.iconShown = not db.iconShown
         ns:UpdateLauncher()

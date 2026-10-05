@@ -189,6 +189,12 @@ local en = {
 }
 
 local useEnglish = GetLocale() ~= "koKR"
+-- 언어 강제 설정: "en" / "ko" / nil(자동). 변경 후 /reload 필요.
+function ns.SetLang(code)
+    if code == "en" then useEnglish = true
+    elseif code == "ko" then useEnglish = false
+    else useEnglish = GetLocale() ~= "koKR" end
+end
 ns.L = setmetatable({}, {
     __index = function(_, k)
         if useEnglish then
