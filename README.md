@@ -7,7 +7,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 ## 한국어 매뉴얼
 
 ### 설치
-1. `BestGearFinder-1.0.0.zip` 압축을 풉니다.
+1. CurseForge/Wago에서 받은 `BestGearFinder-<버전>.zip` 압축을 풉니다.
 2. `BestGearFinder` 폴더를 `World of Warcraft\<버전 폴더>\Interface\AddOns\` 에 넣습니다. (`AddOns\BestGearFinder\BestGearFinder.toc` 가 되어야 합니다.)
 3. 게임을 켜고 `/bgf` 를 입력합니다. 처음 열 때 데이터를 읽느라 몇 초 걸립니다.
 
@@ -15,10 +15,11 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - 창을 열면 내 직업·레벨 기준으로 슬롯별 추천 장비가 역할(딜/탱/힐)별로 가로로 나란히 나옵니다.
 - **요구 레벨**: 입력칸에 범위(예: 20~35)를 쓰고 `검색`. `자동(현재-10)` 은 현재 레벨 -10 ~ 현재 레벨로 되돌립니다.
 - **필터 ▼** 메뉴: 제작템, 퀘스트 보상, 월드 드랍(저확률), 업그레이드만, 몹 레벨 제한, 다른 직업 전용 숨김, 아이템 등급.
-- **슬롯당 N개** 버튼: 슬롯마다 보여줄 아이템 수(1~4).
+- **슬롯당 N개 ▼** 드롭다운: 슬롯마다 보여줄 아이템 수(2~10).
+- **언어 ▼** 드롭다운: 자동 / 한국어 / English. 고르면 창이 바로 새로 열립니다. (`/bgf lang ko|en|auto`)
 - 아이템에 마우스를 올리면 툴팁에 비교 점수와 획득처(던전·보스·드랍률 / 제작 / 퀘스트)가 나옵니다.
 - **화면 아이콘**: 방패 모양 아이콘을 클릭하면 창이 열리고 닫힙니다. 드래그해서 원하는 곳으로 옮길 수 있고 위치는 저장됩니다. (`/bgf 아이콘`으로 숨기기, `/bgf 초기화`로 위치 초기화)
-- **후원** 버튼: 후원 링크를 복사할 수 있습니다.
+- **후원** 버튼(창 오른쪽 위): 후원 링크를 복사할 수 있습니다.
 
 ### 명령어 (`/bgf`, `/bestgear`, `/내템`)
 | 명령 | 설명 |
@@ -37,6 +38,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 | `/bgf 진단` | 상태 진단 |
 | `/bgf 초기화` | 창 위치 초기화 |
 | `/bgf 후원` | 후원 링크 |
+| `/bgf 언어 ko` / `en` / `auto` | 표시 언어 바꾸기 (`/bgf lang ...` 도 가능) |
 
 ### 알아두기
 - 점수는 직업·역할별 스탯 가중치로 계산한 추정치입니다. 정확한 시뮬레이션이 아닙니다.
@@ -49,7 +51,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 ## English manual
 
 ### Install
-1. Unzip `BestGearFinder-1.0.0.zip`.
+1. Unzip the `BestGearFinder-<version>.zip` you downloaded from CurseForge / Wago.
 2. Put the `BestGearFinder` folder in `World of Warcraft\<version folder>\Interface\AddOns\` (result: `AddOns\BestGearFinder\BestGearFinder.toc`).
 3. Type `/bgf` in game. The first open takes a few seconds while the data is indexed.
 
@@ -57,10 +59,11 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - The window shows the best gear for your class and level per slot, with DPS / Tank / Heal columns side by side.
 - **Required level**: type a range (e.g. 20-35) and press `Search`. `Auto (Lv-10)` resets to your level -10 ~ your level.
 - **Filters ▼** menu: crafting, quest rewards, world drops (low chance), upgrades only, mob level limit, hide other-class items, item quality.
-- **Per slot: N** button: how many items to show per slot (1-4).
+- **Per slot: N ▼** dropdown: how many items to show per slot (2-10).
+- **Language ▼** dropdown: Auto / 한국어 / English. The window reopens in the chosen language right away. (`/bgf lang ko|en|auto`)
 - Hover an item for its comparison score and sources (dungeon / boss / drop rate, crafting, quest).
 - **On-screen icon**: click the shield icon to open / close the window. Drag it anywhere; its position is saved. (`/bgf icon` to hide, `/bgf reset` to reset the position)
-- **Support** button: copy the donation link.
+- **Support** button (top right of the window): copy the donation link.
 
 ### Commands (`/bgf`, `/bestgear`, `/내템`)
 | Command | Description |
@@ -79,6 +82,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 | `/bgf diag` | Status diagnostics |
 | `/bgf reset` | Reset window position |
 | `/bgf donate` | Support link |
+| `/bgf lang ko` / `en` / `auto` | Change the display language |
 
 ### Notes
 - Scores are estimates from per-class/role stat weights, not a simulation.
@@ -92,9 +96,11 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
     python tools/extract_cmnangos.py "ClassicDB_1_12_1_z2815.sql.gz" --output "BestGearFinder/GearDatabase.lua"
 (`--min-quality 2`, `--world-rares` optional.) Source: https://github.com/cmangos/classic-db (GPL-3.0)
 
-## Publishing (CurseForge / Wago)
-1. Create the project on both sites (game flavor: Forever, category: Inventory).
-2. Upload `BestGearFinder-1.0.0.zip` with CHANGELOG.md and CURSEFORGE_DESCRIPTION.md.
-3. Optionally add `## X-Curse-Project-ID:` / `## X-Wago-ID:` to the .toc in later versions.
+## Releasing (CurseForge / Wago)
+Releases are automated with GitHub Actions + the BigWigs packager.
+1. Commit changes to `main` and test in game.
+2. On GitHub: Releases → Draft a new release → create a tag such as `v1.0.1` (use `-beta` in the tag for a beta) → Publish.
+3. The workflow packages the addon and uploads it to CurseForge (`X-Curse-Project-ID`) and Wago (`X-Wago-ID`).
+Secrets required: `CF_API_KEY`, `WAGO_API_TOKEN`.
 
 Support: https://buymeacoffee.com/qqhrqqhr2

@@ -15,8 +15,9 @@ Open the window and see, slot by slot, the best items you can equip at your leve
 - **Upgrades only** mode compares against what you have equipped
 - **New Forever items** that are not in the Classic database are found in the game client and marked [New] (source unknown)
 - A draggable on-screen icon opens the window with one click
+- Choose how many items to show per slot (2-10) from a dropdown
 - Filter menu: item quality, crafting, quests, world drops, mob level limit, hide other-class items
-- English and Korean (follows your game language)
+- English and Korean (follows your game language, or pick one from the Language dropdown / `/bgf lang`)
 
 ### Commands
 - `/bgf` (also `/bestgear`) - open / close the window
@@ -42,9 +43,10 @@ All item, loot, crafting and quest data is generated offline from the CMaNGOS cl
 - 툴팁에 **획득처**(던전, 보스, 퀘스트, 전문기술)와 **드랍률** 표시
 - **요구 레벨 범위**를 숫자로 입력(예: 20-35), 장비를 바꾼 뒤에는 검색 버튼으로 새로고침
 - **업그레이드만** 보기: 현재 착용 장비와 비교
+- 슬롯당 표시 개수(2~10)를 드롭다운으로 선택
 - 필터 메뉴: 아이템 등급, 제작, 퀘스트, 월드 드랍, 몹 레벨 제한, 다른 직업 전용 숨김
 - 클릭 한 번으로 여는 드래그 가능한 화면 아이콘
-- 한국어/영어 지원 (게임 언어를 따라갑니다)
+- 한국어/영어 지원 (게임 언어를 따르며, 언어 드롭다운이나 `/bgf 언어`로 바꿀 수 있습니다)
 
 ### 명령어
 - `/bgf` 또는 `/bestgear`, `/내템` - 창 열기/닫기
