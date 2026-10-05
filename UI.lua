@@ -14,6 +14,12 @@ local aucChk
 local frame, scroll, child, status, perBtn, minEdit, maxEdit, upChk, craftChk, questChk, titleText
 local nCols, colW, frameW = 1, 400, MIN_FRAME_W
 
+local EN_CLASS = { WARRIOR="Warrior", PALADIN="Paladin", HUNTER="Hunter", ROGUE="Rogue", PRIEST="Priest", SHAMAN="Shaman", MAGE="Mage", WARLOCK="Warlock", DRUID="Druid" }
+function ns:ClassLabel(class)
+    if L["요구 레벨"] ~= "요구 레벨" and EN_CLASS[class] then return EN_CLASS[class] end
+    return UnitClass("player")
+end
+
 local function Hex(c) return c and format("|cff%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255) or "|cffffffff" end
 
 local function RoleColor(name)
@@ -249,10 +255,10 @@ local function BuildFrame()
     lbl:SetPoint("TOPLEFT", 20, -66)
     lbl:SetText(L["요구 레벨"])
 
-    local function MakeEdit(x)
+    local function MakeEdit(anchor, dx)
         local e = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
         e:SetSize(34, 20)
-        e:SetPoint("TOPLEFT", x, -62)
+        e:SetPoint("LEFT", anchor, "RIGHT", dx, 0)
         e:SetAutoFocus(false)
         e:SetNumeric(true)
         e:SetMaxLetters(2)
@@ -260,11 +266,11 @@ local function BuildFrame()
         e:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
         return e
     end
-    minEdit = MakeEdit(84)
+    minEdit = MakeEdit(lbl, 12)
     local tilde = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     tilde:SetPoint("LEFT", minEdit, "RIGHT", 4, 0)
     tilde:SetText("~")
-    maxEdit = MakeEdit(134)
+    maxEdit = MakeEdit(tilde, 8)
 
     local function Apply()
         ns:SetRange(minEdit:GetText(), maxEdit:GetText())
@@ -386,7 +392,7 @@ function ns:UpdateUI()
     if not frame then return end
     if ns.UpdateLauncher then ns:UpdateLauncher() end
     local _, class = UnitClass("player")
-    titleText:SetText(format("Best Gear Finder  %s%s|r  Lv.%d", Hex(RAID_CLASS_COLORS[class]), UnitClass("player") or "", UnitLevel("player")))
+    titleText:SetText(format("Best Gear Finder  %s%s|r  Lv.%d", Hex(RAID_CLASS_COLORS[class]), (ns.ClassLabel and ns:ClassLabel(class)) or UnitClass("player") or "", UnitLevel("player")))
     perBtn:SetText(L["슬롯당 "] .. self.db.perSlot .. L["개"])
     local lo, hi, isAuto = self:GetRange()
     if not minEdit:HasFocus() then minEdit:SetText(tostring(lo)) end
