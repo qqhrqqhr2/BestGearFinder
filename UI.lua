@@ -509,10 +509,10 @@ function ns:UpdateUI()
         end
         if cnt > 0 then drawBands[#drawBands + 1] = { group = band.group, count = cnt } end
     end
-    local y, hi, ri = 0, 0, 0
+    local y, hdrN, ri = 0, 0, 0
     for _, band in ipairs(drawBands) do
-        hi = hi + 1
-        local h = headers[hi] or CreateHeader(hi)
+        hdrN = hdrN + 1
+        local h = headers[hdrN] or CreateHeader(hdrN)
         h:SetWordWrap(false)
         h:SetTextColor(0.4, 0.8, 1)
         h:ClearAllPoints()
