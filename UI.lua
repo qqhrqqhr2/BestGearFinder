@@ -20,6 +20,15 @@ function ns:ClassLabel(class)
     return UnitClass("player")
 end
 
+-- 반투명 배경 대신 불투명한 단색 배경 (글씨가 잘 보이도록)
+local function SolidBG(f)
+    local t = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+    t:SetColorTexture(0.04, 0.04, 0.06, 1)
+    t:SetPoint("TOPLEFT", 3, -3)
+    t:SetPoint("BOTTOMRIGHT", -3, 3)
+    f.solidBG = t
+end
+
 local function Hex(c) return c and format("|cff%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255) or "|cffffffff" end
 
 local function RoleColor(name)
@@ -151,6 +160,7 @@ local function BuildFrame()
     menu:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 12,
         insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+    SolidBG(menu)
     menu:Hide()
     local filterBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     filterBtn:SetSize(76, 22)
@@ -263,6 +273,7 @@ local function BuildFrame()
         tile = true, tileSize = 16, edgeSize = 12,
         insets = { left = 3, right = 3, top = 3, bottom = 3 },
     })
+    SolidBG(perMenu)
     perMenu:Hide()
     for n = 2, 10 do
         local b = CreateFrame("Button", nil, perMenu)
