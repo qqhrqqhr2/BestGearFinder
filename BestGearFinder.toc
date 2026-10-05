@@ -7,6 +7,7 @@
 ## Version: @project-version@
 ## Category: Inventory
 ## IconTexture: Interface\AddOns\BestGearFinder\Media\icon
+## X-Curse-Project-ID: 1728236
 ## X-License: GPL-3.0
 ## X-Website: https://buymeacoffee.com/qqhrqqhr2
 ## X-Donate: https://buymeacoffee.com/qqhrqqhr2
