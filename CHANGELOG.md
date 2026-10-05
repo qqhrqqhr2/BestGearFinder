@@ -1,5 +1,8 @@
 # Changelog - Best Gear Finder
 
+## 1.0.2
+- Fixed the status line showing a wrong maximum required level.
+
 ## 1.0.1
 - Language dropdown (Auto / 한국어 / English) and `/bgf lang ko|en|auto`; the window rebuilds immediately, no /reload needed.
 - Per-slot count is now a dropdown (2-10).
