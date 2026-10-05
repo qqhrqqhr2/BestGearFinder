@@ -841,7 +841,8 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         else Print("/bgf lang en | ko | auto") return end
         ns.SetLang(db.lang)
         if ns.RelabelData then ns.RelabelData() end
-        Print("Language: " .. (db.lang or "auto") .. " -> /reload")
+        if ns.RebuildUI then ns:RebuildUI() end
+        Print("Language: " .. (db.lang or "auto"))
     elseif msg == "icon" or msg == "아이콘" then
         db.iconShown = not db.iconShown
         ns:UpdateLauncher()

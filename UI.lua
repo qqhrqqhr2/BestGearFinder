@@ -324,7 +324,8 @@ local function BuildFrame()
             langMenu:Hide()
             ns.db.lang = o[1]
             if ns.SetLang then ns.SetLang(o[1]) end
-            if ReloadUI then ReloadUI() end
+            if ns.RelabelData then ns.RelabelData() end
+            ns:RebuildUI()
         end)
     end
     langBtn:SetScript("OnClick", function()
@@ -566,6 +567,21 @@ function ns:UpdateUI()
     end
     local pend = s.pending > 0 and format(L[" · 로딩 대기 %d"], s.pending) or ""
     status:SetText(format(L["요구 레벨 %d~%d%s · 후보 %d개%s · 점수는 스탯 가중치 기준 추정치"], lo, hi, isAuto and L["(자동)"] or "", s.candidates, pend))
+end
+
+-- 언어를 바꾼 뒤 창을 새로 만든다 (/reload 불필요)
+function ns:RebuildUI()
+    if not frame then return end
+    local wasShown = frame:IsShown()
+    frame:Hide()
+    frame:ClearAllPoints()
+    for i = #UISpecialFrames, 1, -1 do
+        if UISpecialFrames[i] == "BestGearFinderFrame" then table.remove(UISpecialFrames, i) end
+    end
+    wipe(rows) wipe(headers) wipe(colHeaders) wipe(dividers) wipe(qualChk) wipe(menuChecks)
+    chanceEdit, aucChk, frame, ns.frame = nil, nil, nil, nil
+    BuildFrame()
+    if wasShown then frame:Show() end
 end
 
 function ns:Toggle()
