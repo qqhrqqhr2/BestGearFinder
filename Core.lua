@@ -38,6 +38,7 @@ local function InitDB()
             if type(v) == "table" then db[k] = {} for kk, vv in pairs(v) do db[k][kk] = vv end else db[k] = v end
         end
     end
+    if type(db.perSlot) ~= "number" or db.perSlot < 2 then db.perSlot = 2 elseif db.perSlot > 10 then db.perSlot = 10 end
     ns.db = db
     if ns.SetLang then ns.SetLang(db.lang) end
     if ns.RelabelData then ns.RelabelData() end

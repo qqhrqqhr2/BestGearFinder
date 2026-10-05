@@ -242,13 +242,46 @@ local function BuildFrame()
     end
     menu:SetHeight(-my + 14)
 
+    -- 후원 버튼 (상단)
+    local donateBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    donateBtn:SetSize(84, 20)
+    donateBtn:SetPoint("TOPRIGHT", -40, -36)
+    donateBtn:SetText(L["후원"])
+    donateBtn:SetScript("OnClick", function() ns:ShowDonate() end)
+
+    -- 슬롯당 개수 드롭다운 (2~10)
     perBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-    perBtn:SetSize(84, 20)
-    perBtn:SetPoint("TOPRIGHT", -40, -36)
+    perBtn:SetSize(112, 20)
+    perBtn:SetPoint("RIGHT", donateBtn, "LEFT", -6, 0)
+    local perMenu = CreateFrame("Frame", nil, frame, template)
+    perMenu:SetFrameStrata("DIALOG")
+    perMenu:SetSize(112, 9 * 20 + 16)
+    perMenu:SetPoint("TOPRIGHT", perBtn, "BOTTOMRIGHT", 0, -2)
+    perMenu:SetBackdrop({
+        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    perMenu:Hide()
+    for n = 2, 10 do
+        local b = CreateFrame("Button", nil, perMenu)
+        b:SetSize(102, 20)
+        b:SetPoint("TOPLEFT", 5, -8 - (n - 2) * 20)
+        local t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        t:SetPoint("CENTER")
+        t:SetText(n)
+        b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+        b:SetScript("OnClick", function()
+            ns.db.perSlot = n
+            perMenu:Hide()
+            ns:Refresh(true)
+        end)
+    end
     perBtn:SetScript("OnClick", function()
-        ns.db.perSlot = (ns.db.perSlot % 4) + 1
-        ns:Refresh(true)
+        if perMenu:IsShown() then perMenu:Hide() else perMenu:Show() end
     end)
+    frame:HookScript("OnHide", function() perMenu:Hide() end)
 
     -- 요구 레벨 범위 입력 줄
     local lbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -312,13 +345,6 @@ local function BuildFrame()
     end)
     autoBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-    -- 후원 버튼
-    local donateBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-    donateBtn:SetSize(84, 20)
-    donateBtn:SetPoint("BOTTOMRIGHT", -40, 12)
-    donateBtn:SetText(L["후원"])
-    donateBtn:SetScript("OnClick", function() ns:ShowDonate() end)
-
     -- 역할 칸 머리글 (스크롤 밖에 고정)
     for i, spec in ipairs(specs) do
         local fs = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -352,7 +378,7 @@ local function BuildFrame()
 
     status = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     status:SetPoint("BOTTOMLEFT", 20, 18)
-    status:SetPoint("BOTTOMRIGHT", -132, 18)
+    status:SetPoint("BOTTOMRIGHT", -20, 18)
     status:SetJustifyH("LEFT")
     status:SetWordWrap(false)
 
@@ -393,7 +419,7 @@ function ns:UpdateUI()
     if ns.UpdateLauncher then ns:UpdateLauncher() end
     local _, class = UnitClass("player")
     titleText:SetText(format("Best Gear Finder  %s%s|r  Lv.%d", Hex(RAID_CLASS_COLORS[class]), (ns.ClassLabel and ns:ClassLabel(class)) or UnitClass("player") or "", UnitLevel("player")))
-    perBtn:SetText(L["슬롯당 "] .. self.db.perSlot .. L["개"])
+    perBtn:SetText(L["슬롯당 "] .. self.db.perSlot .. L["개"] .. " ▼")
     local lo, hi, isAuto = self:GetRange()
     if not minEdit:HasFocus() then minEdit:SetText(tostring(lo)) end
     if not maxEdit:HasFocus() then maxEdit:SetText(tostring(hi)) end
