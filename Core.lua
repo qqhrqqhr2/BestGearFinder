@@ -40,6 +40,7 @@ local function InitDB()
     end
     ns.db = db
     if ns.SetLang then ns.SetLang(db.lang) end
+    if ns.RelabelData then ns.RelabelData() end
 end
 
 function ns:CharKey() return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") end
@@ -838,6 +839,7 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         elseif a == "auto" or a == "자동" then db.lang = nil
         else Print("/bgf lang en | ko | auto") return end
         ns.SetLang(db.lang)
+        if ns.RelabelData then ns.RelabelData() end
         Print("Language: " .. (db.lang or "auto") .. " -> /reload")
     elseif msg == "icon" or msg == "아이콘" then
         db.iconShown = not db.iconShown

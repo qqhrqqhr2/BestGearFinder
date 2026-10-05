@@ -42,22 +42,22 @@ ns.ARMOR_LOCS = set("INVTYPE_HEAD", "INVTYPE_SHOULDER", "INVTYPE_CHEST", "INVTYP
 
 -- 슬롯 그룹: locs = 장착 부위, inv = 비교 대상 인벤토리 슬롯 ID
 ns.GROUPS = {
-    { key = "HEAD",     label = L["머리"],      locs = set("INVTYPE_HEAD"), inv = {1} },
-    { key = "NECK",     label = L["목걸이"],    locs = set("INVTYPE_NECK"), inv = {2} },
-    { key = "SHOULDER", label = L["어깨"],      locs = set("INVTYPE_SHOULDER"), inv = {3} },
-    { key = "CLOAK",    label = L["등"],        locs = set("INVTYPE_CLOAK"), inv = {15} },
-    { key = "CHEST",    label = L["가슴"],      locs = set("INVTYPE_CHEST", "INVTYPE_ROBE"), inv = {5} },
-    { key = "WRIST",    label = L["손목"],      locs = set("INVTYPE_WRIST"), inv = {9} },
-    { key = "HAND",     label = L["손"],        locs = set("INVTYPE_HAND"), inv = {10} },
-    { key = "WAIST",    label = L["허리"],      locs = set("INVTYPE_WAIST"), inv = {6} },
-    { key = "LEGS",     label = L["다리"],      locs = set("INVTYPE_LEGS"), inv = {7} },
-    { key = "FEET",     label = L["발"],        locs = set("INVTYPE_FEET"), inv = {8} },
-    { key = "FINGER",   label = L["반지"],      locs = set("INVTYPE_FINGER"), inv = {11, 12} },
-    { key = "TRINKET",  label = L["장신구"],    locs = set("INVTYPE_TRINKET"), inv = {13, 14} },
-    { key = "MAIN1H",   label = L["한손 무기"], locs = set("INVTYPE_WEAPON", "INVTYPE_WEAPONMAINHAND"), inv = {16} },
-    { key = "MAIN2H",   label = L["양손 무기"], locs = set("INVTYPE_2HWEAPON"), inv = {16} },
-    { key = "OFF",      label = L["보조 장비"], locs = set("INVTYPE_SHIELD", "INVTYPE_HOLDABLE", "INVTYPE_WEAPONOFFHAND"), inv = {17} },
-    { key = "RANGED",   label = L["원거리/성물"], locs = set("INVTYPE_RANGED", "INVTYPE_RANGEDRIGHT", "INVTYPE_THROWN", "INVTYPE_RELIC"), inv = {18} },
+    { key = "HEAD",     label = L["머리"], labelKo = "머리",      locs = set("INVTYPE_HEAD"), inv = {1} },
+    { key = "NECK",     label = L["목걸이"], labelKo = "목걸이",    locs = set("INVTYPE_NECK"), inv = {2} },
+    { key = "SHOULDER", label = L["어깨"], labelKo = "어깨",      locs = set("INVTYPE_SHOULDER"), inv = {3} },
+    { key = "CLOAK",    label = L["등"], labelKo = "등",        locs = set("INVTYPE_CLOAK"), inv = {15} },
+    { key = "CHEST",    label = L["가슴"], labelKo = "가슴",      locs = set("INVTYPE_CHEST", "INVTYPE_ROBE"), inv = {5} },
+    { key = "WRIST",    label = L["손목"], labelKo = "손목",      locs = set("INVTYPE_WRIST"), inv = {9} },
+    { key = "HAND",     label = L["손"], labelKo = "손",        locs = set("INVTYPE_HAND"), inv = {10} },
+    { key = "WAIST",    label = L["허리"], labelKo = "허리",      locs = set("INVTYPE_WAIST"), inv = {6} },
+    { key = "LEGS",     label = L["다리"], labelKo = "다리",      locs = set("INVTYPE_LEGS"), inv = {7} },
+    { key = "FEET",     label = L["발"], labelKo = "발",        locs = set("INVTYPE_FEET"), inv = {8} },
+    { key = "FINGER",   label = L["반지"], labelKo = "반지",      locs = set("INVTYPE_FINGER"), inv = {11, 12} },
+    { key = "TRINKET",  label = L["장신구"], labelKo = "장신구",    locs = set("INVTYPE_TRINKET"), inv = {13, 14} },
+    { key = "MAIN1H",   label = L["한손 무기"], labelKo = "한손 무기", locs = set("INVTYPE_WEAPON", "INVTYPE_WEAPONMAINHAND"), inv = {16} },
+    { key = "MAIN2H",   label = L["양손 무기"], labelKo = "양손 무기", locs = set("INVTYPE_2HWEAPON"), inv = {16} },
+    { key = "OFF",      label = L["보조 장비"], labelKo = "보조 장비", locs = set("INVTYPE_SHIELD", "INVTYPE_HOLDABLE", "INVTYPE_WEAPONOFFHAND"), inv = {17} },
+    { key = "RANGED",   label = L["원거리/성물"], labelKo = "원거리/성물", locs = set("INVTYPE_RANGED", "INVTYPE_RANGEDRIGHT", "INVTYPE_THROWN", "INVTYPE_RELIC"), inv = {18} },
 }
 -- DW 가능 직업은 한손 무기도 보조 장비 후보가 됨 (Core에서 처리)
 ns.OFF_EXTRA_LOCS = set("INVTYPE_WEAPON")
@@ -84,40 +84,40 @@ local DEF, DODGE, PARRY, BLOCK = "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT", "ITEM_MO
 
 ns.SPECS = {
     WARRIOR = {
-        { name = L["분노/무기 (딜)"], w = { [STR]=1, [AGI]=0.7, [STA]=0.3, [AP]=0.5, [DPS]=4, [ARMOR]=0.01 } },
-        { name = L["방어 (탱)"],      w = { [STA]=1, [STR]=0.5, [AGI]=0.4, [DEF]=2, [DODGE]=2, [PARRY]=2, [BLOCK]=0.5, [DPS]=1, [ARMOR]=0.06 } },
+        { name = L["분노/무기 (딜)"], nameKo = "분노/무기 (딜)", w = { [STR]=1, [AGI]=0.7, [STA]=0.3, [AP]=0.5, [DPS]=4, [ARMOR]=0.01 } },
+        { name = L["방어 (탱)"], nameKo = "방어 (탱)",      w = { [STA]=1, [STR]=0.5, [AGI]=0.4, [DEF]=2, [DODGE]=2, [PARRY]=2, [BLOCK]=0.5, [DPS]=1, [ARMOR]=0.06 } },
     },
     PALADIN = {
-        { name = L["징벌 (딜)"],  w = { [STR]=1, [AGI]=0.3, [STA]=0.3, [INT]=0.1, [AP]=0.5, [DPS]=4, [ARMOR]=0.01 } },
-        { name = L["신성 (힐)"],  w = merge({ [INT]=1, [SPI]=0.4, [STA]=0.3, [MP5]=2 }, HEAL) },
-        { name = L["보호 (탱)"],  w = { [STA]=1, [STR]=0.6, [DEF]=2, [DODGE]=2, [PARRY]=2, [BLOCK]=0.5, [DPS]=0.5, [ARMOR]=0.06 } },
+        { name = L["징벌 (딜)"], nameKo = "징벌 (딜)",  w = { [STR]=1, [AGI]=0.3, [STA]=0.3, [INT]=0.1, [AP]=0.5, [DPS]=4, [ARMOR]=0.01 } },
+        { name = L["신성 (힐)"], nameKo = "신성 (힐)",  w = merge({ [INT]=1, [SPI]=0.4, [STA]=0.3, [MP5]=2 }, HEAL) },
+        { name = L["보호 (탱)"], nameKo = "보호 (탱)",  w = { [STA]=1, [STR]=0.6, [DEF]=2, [DODGE]=2, [PARRY]=2, [BLOCK]=0.5, [DPS]=0.5, [ARMOR]=0.06 } },
     },
     HUNTER = {
-        { name = L["사냥꾼 (딜)"], w = { [AGI]=1, [INT]=0.4, [STA]=0.4, [STR]=0.2, [AP]=0.5, [RAP]=0.5, [DPS]=4 } },
+        { name = L["사냥꾼 (딜)"], nameKo = "사냥꾼 (딜)", w = { [AGI]=1, [INT]=0.4, [STA]=0.4, [STR]=0.2, [AP]=0.5, [RAP]=0.5, [DPS]=4 } },
     },
     ROGUE = {
-        { name = L["도적 (딜)"],  w = { [AGI]=1, [STR]=0.6, [STA]=0.3, [AP]=0.5, [DPS]=4 } },
+        { name = L["도적 (딜)"], nameKo = "도적 (딜)",  w = { [AGI]=1, [STR]=0.6, [STA]=0.3, [AP]=0.5, [DPS]=4 } },
     },
     PRIEST = {
-        { name = L["신성/수양 (힐)"], w = merge({ [INT]=1, [SPI]=0.8, [STA]=0.3, [MP5]=2 }, HEAL) },
-        { name = L["암흑 (딜)"],      w = merge({ [INT]=0.7, [SPI]=0.3, [STA]=0.4 }, SDMG) },
+        { name = L["신성/수양 (힐)"], nameKo = "신성/수양 (힐)", w = merge({ [INT]=1, [SPI]=0.8, [STA]=0.3, [MP5]=2 }, HEAL) },
+        { name = L["암흑 (딜)"], nameKo = "암흑 (딜)",      w = merge({ [INT]=0.7, [SPI]=0.3, [STA]=0.4 }, SDMG) },
     },
     SHAMAN = {
-        { name = L["정기 (딜)"],  w = merge({ [INT]=1, [STA]=0.4, [SPI]=0.2 }, SDMG) },
-        { name = L["고양 (딜)"],  w = { [STR]=0.8, [AGI]=0.8, [STA]=0.3, [INT]=0.1, [AP]=0.5, [DPS]=4 } },
-        { name = L["복원 (힐)"],  w = merge({ [INT]=1, [SPI]=0.3, [STA]=0.3, [MP5]=2 }, HEAL) },
+        { name = L["정기 (딜)"], nameKo = "정기 (딜)",  w = merge({ [INT]=1, [STA]=0.4, [SPI]=0.2 }, SDMG) },
+        { name = L["고양 (딜)"], nameKo = "고양 (딜)",  w = { [STR]=0.8, [AGI]=0.8, [STA]=0.3, [INT]=0.1, [AP]=0.5, [DPS]=4 } },
+        { name = L["복원 (힐)"], nameKo = "복원 (힐)",  w = merge({ [INT]=1, [SPI]=0.3, [STA]=0.3, [MP5]=2 }, HEAL) },
     },
     MAGE = {
-        { name = L["마법사 (딜)"], w = merge({ [INT]=1, [SPI]=0.3, [STA]=0.4 }, SDMG) },
+        { name = L["마법사 (딜)"], nameKo = "마법사 (딜)", w = merge({ [INT]=1, [SPI]=0.3, [STA]=0.4 }, SDMG) },
     },
     WARLOCK = {
-        { name = L["흑마법사 (딜)"], w = merge({ [STA]=0.8, [INT]=0.8, [SPI]=0.1 }, SDMG) },
+        { name = L["흑마법사 (딜)"], nameKo = "흑마법사 (딜)", w = merge({ [STA]=0.8, [INT]=0.8, [SPI]=0.1 }, SDMG) },
     },
     DRUID = {
-        { name = L["조화 (딜)"],    w = merge({ [INT]=1, [SPI]=0.3, [STA]=0.4 }, SDMG) },
-        { name = L["야성 (딜)"],    w = { [STR]=1, [AGI]=0.75, [STA]=0.3, [AP]=0.5, [FAP]=0.5 } },  -- 힘 1 = 공격력 2
-        { name = L["야성 (탱)"],    w = { [STA]=1, [AGI]=0.8, [STR]=0.4, [FAP]=0.3, [ARMOR]=0.05 } },
-        { name = L["회복 (힐)"],    w = merge({ [INT]=1, [SPI]=0.5, [STA]=0.3, [MP5]=2 }, HEAL) },
+        { name = L["조화 (딜)"], nameKo = "조화 (딜)",    w = merge({ [INT]=1, [SPI]=0.3, [STA]=0.4 }, SDMG) },
+        { name = L["야성 (딜)"], nameKo = "야성 (딜)",    w = { [STR]=1, [AGI]=0.75, [STA]=0.3, [AP]=0.5, [FAP]=0.5 } },  -- 힘 1 = 공격력 2
+        { name = L["야성 (탱)"], nameKo = "야성 (탱)",    w = { [STA]=1, [AGI]=0.8, [STR]=0.4, [FAP]=0.3, [ARMOR]=0.05 } },
+        { name = L["회복 (힐)"], nameKo = "회복 (힐)",    w = merge({ [INT]=1, [SPI]=0.5, [STA]=0.3, [MP5]=2 }, HEAL) },
     },
 }
 
@@ -127,3 +127,15 @@ ns.ILVL_WEIGHT = 0.15
 -- 업그레이드 판정: 착용 중인 장비보다 이 비율 + 고정치 이상 높아야 ▲ (미세한 차이는 무시)
 ns.UPGRADE_MARGIN_PCT = 0.05
 ns.UPGRADE_MARGIN_ABS = 0.5
+
+-- 언어 강제 설정(/bgf lang)이 적용된 뒤 슬롯/스펙 이름을 다시 번역한다.
+function ns.RelabelData()
+    for _, g in ipairs(ns.GROUPS or {}) do
+        if g.labelKo then g.label = L[g.labelKo] end
+    end
+    for _, list in pairs(ns.SPECS or {}) do
+        for _, sp in ipairs(list) do
+            if sp.nameKo then sp.name = L[sp.nameKo] end
+        end
+    end
+end
