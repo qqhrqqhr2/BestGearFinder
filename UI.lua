@@ -1,0 +1,496 @@
+-- BestGearFinder : UI (역할별 칸을 가로로 나란히 표시)
+local ADDON, ns = ...
+local L = ns.L
+
+local FRAME_H = 604
+local MIN_FRAME_W = 480
+local COL_MIN_W = 236
+local SIDE_PAD = 56          -- 스크롤바/여백 합계
+local ROW_H, HEADER_H = 36, 18
+
+local rows, headers, colHeaders, dividers = {}, {}, {}, {}
+local qualChk, menuChecks, chanceEdit = {}, {}, nil
+local aucChk
+local frame, scroll, child, status, perBtn, minEdit, maxEdit, upChk, craftChk, questChk, titleText
+local nCols, colW, frameW = 1, 400, MIN_FRAME_W
+
+local function Hex(c) return c and format("|cff%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255) or "|cffffffff" end
+
+local function RoleColor(name)
+    if name:find("탱") or name:find("Tank") then return 0.45, 0.7, 1 end
+    if name:find("힐") or name:find("Heal") then return 0.4, 1, 0.5 end
+    return 1, 0.6, 0.3
+end
+
+local function CreateRow(i)
+    local r = CreateFrame("Button", nil, child)
+    r.icon = r:CreateTexture(nil, "ARTWORK")
+    r.icon:SetSize(30, 30)
+    r.icon:SetPoint("LEFT", 2, 0)
+    r.name = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 4, -1)
+    r.name:SetPoint("RIGHT", r, "RIGHT", -2, 0)
+    r.name:SetJustifyH("LEFT")
+    r.name:SetWordWrap(false)
+    r.sub = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    r.sub:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2)
+    r.sub:SetPoint("RIGHT", r, "RIGHT", -2, 0)
+    r.sub:SetJustifyH("LEFT")
+    r.sub:SetWordWrap(false)
+    r.hl = r:CreateTexture(nil, "HIGHLIGHT")
+    r.hl:SetAllPoints()
+    r.hl:SetColorTexture(1, 1, 1, 0.08)
+    r:SetScript("OnEnter", function(self)
+        if not self.link then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetHyperlink(self.link)
+        GameTooltip:AddLine(" ")
+        if self.baseIlvl then
+            GameTooltip:AddLine(L["현재 착용 장비 아이템 레벨: "] .. self.baseIlvl, 0.7, 0.7, 0.7)
+        else
+            GameTooltip:AddLine(L["현재 이 슬롯: 비어 있음"], 0.7, 0.7, 0.7)
+        end
+        if self.score then
+            GameTooltip:AddLine(format(L["추정 점수: 이 아이템 %.1f / 착용 중 %.1f"], self.score, self.baseScore or 0), 0.6, 0.9, 0.6)
+        end
+        local rec = self.rec
+        if rec and #rec.src > 0 then
+            GameTooltip:AddLine(L["획득처 (CMaNGOS)"], 1, 0.82, 0)
+            local shown = 0
+            for _, s in ipairs(rec.src) do
+                if ns.SrcAllowed(s) then
+                    shown = shown + 1
+                    if shown > 6 then GameTooltip:AddLine("...", 0.7, 0.7, 0.7) break end
+                    if s.kind == "craft" then
+                        GameTooltip:AddLine(ns:FormatSource(s), 0.4, 0.8, 1)
+                    elseif s.kind == "quest" then
+                        GameTooltip:AddLine(ns:FormatSource(s), 1, 0.8, 0.3)
+                    else
+                        GameTooltip:AddLine(ns:FormatSource(s), 0.8, 0.8, 0.8)
+                    end
+                end
+            end
+        end
+        GameTooltip:Show()
+    end)
+    r:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    r:SetScript("OnClick", function(self)
+        if not self.link then return end
+        if IsModifiedClick("CHATLINK") then
+            local ins = ChatEdit_InsertLink or (ChatFrameUtil and ChatFrameUtil.InsertLink)
+            if ins then ins(self.link) end
+        elseif IsModifiedClick("DRESSUP") then
+            local dress = DressUpItemLink or (C_Item and C_Item.DressUpItemLink)
+            if dress then dress(self.link) end
+        end
+    end)
+    rows[i] = r
+    return r
+end
+
+local function CreateHeader(i)
+    local h = child:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    h:SetJustifyH("LEFT")
+    headers[i] = h
+    return h
+end
+
+local function BuildFrame()
+    local specs = ns:GetSpecList()
+    nCols = #specs
+    frameW = math.max(MIN_FRAME_W, SIDE_PAD + nCols * COL_MIN_W)
+    colW = (frameW - SIDE_PAD) / nCols
+
+    local template = BackdropTemplateMixin and "BackdropTemplate" or nil
+    frame = CreateFrame("Frame", "BestGearFinderFrame", UIParent, template)
+    frame:SetSize(frameW, FRAME_H)
+    frame:SetFrameStrata("HIGH")
+    frame:SetClampedToScreen(true)
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetBackdrop({
+        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+        tile = true, tileSize = 32, edgeSize = 32,
+        insets = { left = 11, right = 12, top = 12, bottom = 11 },
+    })
+    -- 화면보다 넓어지면 자동 축소
+    local maxW = UIParent:GetWidth() * 0.96
+    if maxW and maxW > 0 and frameW > maxW then frame:SetScale(maxW / frameW) end
+
+    frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local p, _, rp, x, y = self:GetPoint()
+        ns.db.point = { p, rp, x, y }
+    end)
+    frame:SetScript("OnShow", function() ns:Refresh(true) end)
+    frame:Hide()
+    tinsert(UISpecialFrames, "BestGearFinderFrame")
+
+    local pt = ns.db.point
+    if pt then frame:SetPoint(pt[1], UIParent, pt[2], pt[3], pt[4]) else frame:SetPoint("CENTER") end
+
+    local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+    close:SetPoint("TOPRIGHT", -5, -5)
+
+    titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    titleText:SetPoint("TOP", 0, -16)
+
+    -- 필터 메뉴: 모든 필터를 한 곳에 모은 팝업
+    local menu = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    menu:SetSize(232, 360)
+    menu:SetFrameStrata("DIALOG")
+    menu:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+    menu:Hide()
+    local filterBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    filterBtn:SetSize(76, 22)
+    filterBtn:SetPoint("TOPLEFT", 16, -34)
+    filterBtn:SetText(L["필터 ▼"])
+    filterBtn:SetScript("OnClick", function() if menu:IsShown() then menu:Hide() else menu:Show() end end)
+    menu:SetPoint("TOPLEFT", filterBtn, "BOTTOMLEFT", 0, -2)
+    local my = -10
+    local function Header(text)
+        local h = menu:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        h:SetPoint("TOPLEFT", 12, my)
+        h:SetText(text)
+        my = my - 18
+    end
+    local function Check(label, key, tip, x, noAdvance)
+        local cb = CreateFrame("CheckButton", nil, menu, "UICheckButtonTemplate")
+        cb:SetSize(22, 22)
+        cb:SetPoint("TOPLEFT", x or 10, my + 2)
+        cb.text = cb:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        cb.text:SetPoint("LEFT", cb, "RIGHT", 2, 1)
+        cb.text:SetText(label)
+        cb.key = key
+        cb:SetScript("OnClick", function(self)
+            ns.db[self.key] = self:GetChecked() and true or false
+            ns:Refresh(true)
+        end)
+        if tip then
+            cb:SetScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:AddLine(label, 1, 1, 1)
+                GameTooltip:AddLine(tip, 0.8, 0.8, 0.8, true)
+                GameTooltip:Show()
+            end)
+            cb:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        end
+        if not noAdvance then my = my - 22 end
+        menuChecks[#menuChecks + 1] = cb
+        return cb
+    end
+    Header(L["출처"])
+    craftChk = Check(L["제작템 포함"], "crafting", L["전문기술로 만드는 장비를 포함합니다."])
+    questChk = Check(L["퀘스트 보상"], "quests", L["아직 완료하지 않은 퀘스트의 보상을 포함합니다."])
+    aucChk = Check(L["월드 드랍 (저확률)"], "auction", L["던전이 아닌 월드의 여러 잡몹이 아주 낮은 확률로 떨어뜨리는 아이템을 포함합니다."])
+    local ce = CreateFrame("EditBox", nil, menu, "InputBoxTemplate")
+    ce:SetSize(40, 18)
+    ce:SetPoint("TOPLEFT", 40, my + 1)
+    ce:SetAutoFocus(false)
+    ce:SetMaxLetters(5)
+    ce:SetJustifyH("CENTER")
+    local cl = menu:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    cl:SetPoint("LEFT", ce, "RIGHT", 4, 0)
+    cl:SetText(L["% 미만은 월드 드랍으로 분류"])
+    local function ApplyChance(self)
+        local v = tonumber(self:GetText())
+        if v then ns.db.minChance = math.max(0, math.min(100, v)) end
+        self:ClearFocus()
+        ns:Refresh(true)
+    end
+    ce:SetScript("OnEnterPressed", ApplyChance)
+    ce:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    chanceEdit = ce
+    my = my - 26
+    Header(L["조건"])
+    upChk = Check(L["업그레이드만"], "upgradeOnly", L["현재 착용 장비보다 점수가 높은 것만 보여줍니다."])
+    Check(L["화면에 아이콘 표시"], "iconShown", L["게임 화면에 떠 있는 실행 아이콘을 보여줍니다. 드래그해서 옮길 수 있습니다."])
+    Check(L["신규 아이템 포함 (출처 불명)"], "newItems", L["1.12 DB에 없는 Forever 신규 장비를 게임에서 직접 찾아 포함합니다. 어디서 나오는지는 알 수 없습니다."])
+    Check(L["몹 레벨 제한 (범위+8)"], "mobCut", L["출처 몬스터의 레벨이 요구 레벨 상한+8을 넘으면 제외합니다."])
+    Check(L["다른 직업 전용 숨김"], "classFilter", L["툴팁에 직업 제한이 있고 내 직업이 아니면 제외합니다."])
+    Header(L["등급"])
+    local QUALS = {
+        { 0, L["하급"], "|cff9d9d9d" }, { 1, L["일반"], "|cffffffff" }, { 2, L["고급"], "|cff1eff00" },
+        { 3, L["희귀"], "|cff0070dd" }, { 4, L["영웅"], "|cffa335ee" }, { 5, L["전설"], "|cffff8000" },
+    }
+    for i, q in ipairs(QUALS) do
+        local col = (i - 1) % 2
+        local cb = CreateFrame("CheckButton", nil, menu, "UICheckButtonTemplate")
+        cb:SetSize(22, 22)
+        cb:SetPoint("TOPLEFT", 10 + col * 100, my + 2)
+        cb.text = cb:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        cb.text:SetPoint("LEFT", cb, "RIGHT", 2, 1)
+        cb.text:SetText(q[3] .. q[2] .. "|r")
+        cb.q = q[1]
+        cb:SetScript("OnClick", function(self)
+            ns.db.qual[self.q] = self:GetChecked() and true or nil
+            ns:Refresh(true)
+        end)
+        qualChk[i] = cb
+        if col == 1 then my = my - 22 end
+    end
+    menu:SetHeight(-my + 14)
+
+    perBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    perBtn:SetSize(84, 20)
+    perBtn:SetPoint("TOPRIGHT", -40, -36)
+    perBtn:SetScript("OnClick", function()
+        ns.db.perSlot = (ns.db.perSlot % 4) + 1
+        ns:Refresh(true)
+    end)
+
+    -- 요구 레벨 범위 입력 줄
+    local lbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    lbl:SetPoint("TOPLEFT", 20, -66)
+    lbl:SetText(L["요구 레벨"])
+
+    local function MakeEdit(x)
+        local e = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
+        e:SetSize(34, 20)
+        e:SetPoint("TOPLEFT", x, -62)
+        e:SetAutoFocus(false)
+        e:SetNumeric(true)
+        e:SetMaxLetters(2)
+        e:SetJustifyH("CENTER")
+        e:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+        return e
+    end
+    minEdit = MakeEdit(84)
+    local tilde = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    tilde:SetPoint("LEFT", minEdit, "RIGHT", 4, 0)
+    tilde:SetText("~")
+    maxEdit = MakeEdit(134)
+
+    local function Apply()
+        ns:SetRange(minEdit:GetText(), maxEdit:GetText())
+        minEdit:ClearFocus()
+        maxEdit:ClearFocus()
+        ns:ForceRefresh()
+    end
+    minEdit:SetScript("OnEnterPressed", Apply)
+    maxEdit:SetScript("OnEnterPressed", Apply)
+    minEdit:SetScript("OnTabPressed", function() maxEdit:SetFocus() end)
+    maxEdit:SetScript("OnTabPressed", function() minEdit:SetFocus() end)
+
+    local searchBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    searchBtn:SetSize(64, 22)
+    searchBtn:SetPoint("LEFT", maxEdit, "RIGHT", 8, 0)
+    searchBtn:SetText(L["검색"])
+    searchBtn:SetScript("OnClick", Apply)
+    searchBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine(L["검색 / 새로고침"], 1, 1, 1)
+        GameTooltip:AddLine(L["입력한 요구 레벨 범위로, 현재 착용 중인 장비 기준으로 다시 계산합니다."], 0.8, 0.8, 0.8)
+        GameTooltip:Show()
+    end)
+    searchBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    local autoBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    autoBtn:SetSize(86, 22)
+    autoBtn:SetPoint("LEFT", searchBtn, "RIGHT", 4, 0)
+    autoBtn:SetText(L["자동(현재-10)"])
+    autoBtn:SetScript("OnClick", function()
+        ns:ClearRange()
+        ns:ForceRefresh()
+    end)
+    autoBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine(L["자동 범위"], 1, 1, 1)
+        GameTooltip:AddLine(L["현재 레벨 -10 ~ 현재 레벨로 되돌립니다. 레벨업하면 같이 올라갑니다."], 0.8, 0.8, 0.8)
+        GameTooltip:Show()
+    end)
+    autoBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    -- 후원 버튼
+    local donateBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    donateBtn:SetSize(84, 20)
+    donateBtn:SetPoint("BOTTOMRIGHT", -40, 12)
+    donateBtn:SetText(L["후원"])
+    donateBtn:SetScript("OnClick", function() ns:ShowDonate() end)
+
+    -- 역할 칸 머리글 (스크롤 밖에 고정)
+    for i, spec in ipairs(specs) do
+        local fs = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        fs:SetPoint("TOPLEFT", frame, "TOPLEFT", 18 + (i - 1) * colW + 4, -92)
+        fs:SetWidth(colW - 8)
+        fs:SetJustifyH("LEFT")
+        fs:SetWordWrap(false)
+        fs:SetTextColor(RoleColor(spec.name))
+        fs:SetText(spec.name)
+        colHeaders[i] = fs
+    end
+    local line = frame:CreateTexture(nil, "ARTWORK")
+    line:SetColorTexture(1, 1, 1, 0.25)
+    line:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -110)
+    line:SetSize(colW * nCols, 1)
+
+    -- 스크롤 영역
+    scroll = CreateFrame("ScrollFrame", "BestGearFinderScroll", frame, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 18, -114)
+    scroll:SetPoint("BOTTOMRIGHT", -36, 38)
+    child = CreateFrame("Frame", nil, scroll)
+    child:SetSize(colW * nCols, 10)
+    scroll:SetScrollChild(child)
+
+    for i = 1, nCols - 1 do
+        local d = child:CreateTexture(nil, "BACKGROUND")
+        d:SetColorTexture(1, 1, 1, 0.12)
+        d:SetWidth(1)
+        dividers[i] = d
+    end
+
+    status = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    status:SetPoint("BOTTOMLEFT", 20, 18)
+    status:SetPoint("BOTTOMRIGHT", -20, 18)
+    status:SetJustifyH("LEFT")
+    status:SetWordWrap(false)
+
+    ns.frame = frame
+end
+
+local function HideAll()
+    for _, r in ipairs(rows) do r:Hide() end
+    for _, h in ipairs(headers) do h:Hide() end
+    for _, d in ipairs(dividers) do d:Hide() end
+end
+
+local function ShowMessage(text)
+    HideAll()
+    local h = headers[1] or CreateHeader(1)
+    h:ClearAllPoints()
+    h:SetPoint("TOPLEFT", child, "TOPLEFT", 4, -8)
+    h:SetWidth(math.min(colW * nCols - 8, 420))
+    h:SetWordWrap(true)
+    h:SetTextColor(1, 0.82, 0)
+    h:SetText(text)
+    h:Show()
+    child:SetHeight(120)
+end
+
+function ns:UpdateProgress()
+    if status and self.indexState == "running" then
+        if self.indexStats.scanned then
+            status:SetText(string.format(L["신규 아이템 검색 중... (%d / %d) 처음 한 번만 걸립니다"], self.indexStats.scanned, 400000))
+        else
+            status:SetText(string.format(L["CMaNGOS 데이터 인덱싱 중... (아이템 %d개)"], self.indexStats.items or 0))
+        end
+    end
+end
+
+function ns:UpdateUI()
+    if not frame then return end
+    if ns.UpdateLauncher then ns:UpdateLauncher() end
+    local _, class = UnitClass("player")
+    titleText:SetText(format("Best Gear Finder  %s%s|r  Lv.%d", Hex(RAID_CLASS_COLORS[class]), UnitClass("player") or "", UnitLevel("player")))
+    perBtn:SetText(L["슬롯당 "] .. self.db.perSlot .. L["개"])
+    local lo, hi, isAuto = self:GetRange()
+    if not minEdit:HasFocus() then minEdit:SetText(tostring(lo)) end
+    if not maxEdit:HasFocus() then maxEdit:SetText(tostring(hi)) end
+    for _, cb in ipairs(menuChecks) do cb:SetChecked(self.db[cb.key] and true or false) end
+    if chanceEdit and not chanceEdit:HasFocus() then chanceEdit:SetText(tostring(self.db.minChance or 0)) end
+    for _, cb in ipairs(qualChk) do cb:SetChecked(self.db.qual[cb.q] and true or false) end
+
+    local state = self.indexState
+    if self.lastError and state == "done" then
+        ShowMessage(L["계산 중 오류가 발생했습니다.\n\n"] .. tostring(self.lastError):sub(1, 400) .. L["\n\n(채팅창에도 출력됩니다. 이 내용을 알려주세요)"])
+        status:SetText("")
+        return
+    end
+    if state == "idle" or state == "running" then
+        ShowMessage(L["CMaNGOS 데이터를 인덱싱하는 중입니다..."])
+        self:UpdateProgress()
+        return
+    elseif state == "empty" then
+        ShowMessage(L["CMaNGOS에서 장비 드랍 데이터를 읽지 못했습니다.\n\ntools/extract_cmnangos.py 실행 결과와\n/bgf 진단 내용을 확인해 주세요."])
+        status:SetText("")
+        return
+    end
+
+    HideAll()
+    local function Visible(list)
+        if not list or not self.db.upgradeOnly then return list end
+        local out = {}
+        for _, e in ipairs(list) do if e.upgrade then out[#out + 1] = e end end
+        return #out > 0 and out or nil
+    end
+    local drawBands = {}
+    for _, band in ipairs(self.bands) do
+        local cnt = 0
+        for si = 1, nCols do
+            local l = Visible(self.views[si] and self.views[si][band.group.key])
+            if l and #l > cnt then cnt = #l end
+        end
+        if cnt > 0 then drawBands[#drawBands + 1] = { group = band.group, count = cnt } end
+    end
+    local y, hi, ri = 0, 0, 0
+    for _, band in ipairs(drawBands) do
+        hi = hi + 1
+        local h = headers[hi] or CreateHeader(hi)
+        h:SetWordWrap(false)
+        h:SetTextColor(0.4, 0.8, 1)
+        h:ClearAllPoints()
+        h:SetPoint("TOPLEFT", child, "TOPLEFT", 4, -y - 2)
+        h:SetWidth(colW * nCols - 8)
+        h:SetText(band.group.label)
+        h:Show()
+        y = y + HEADER_H
+        for si = 1, nCols do
+            local list = Visible(self.views[si] and self.views[si][band.group.key])
+            if list then
+                for n, e in ipairs(list) do
+                    ri = ri + 1
+                    local r = rows[ri] or CreateRow(ri)
+                    r:SetSize(colW - 6, ROW_H)
+                    r:ClearAllPoints()
+                    r:SetPoint("TOPLEFT", child, "TOPLEFT", (si - 1) * colW + 2, -(y + (n - 1) * ROW_H))
+                    r.link, r.rec, r.baseIlvl, r.score, r.baseScore = e.link, e.rec, e.baseIlvl, e.score, e.baseScore
+                    r.icon:SetTexture(e.rec.icon)
+                    local mark = e.upgrade and "|cff40ff40▲|r " or ""
+                    local ps = self:PrimarySource(e.rec)
+                    if ps and ps.kind == "unknown" then mark = mark .. L["|cffff80ff[신규]|r "] end
+                    if ps and ps.kind == "craft" then mark = mark .. L["|cff66ccff[제작]|r "] end
+                    if ps and ps.kind == "quest" then mark = mark .. L["|cffffcc33[퀘스트]|r "] end
+                    r.name:SetText(mark .. e.link)
+                    r.sub:SetText(format(L["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"], e.ilvl, e.req,
+                        self:ShortSource(e.rec)))
+                    r:Show()
+                end
+            end
+        end
+        y = y + band.count * ROW_H + 6
+    end
+    child:SetHeight(math.max(y, 10))
+    for i, d in ipairs(dividers) do
+        d:ClearAllPoints()
+        d:SetPoint("TOPLEFT", child, "TOPLEFT", i * colW, 0)
+        d:SetHeight(math.max(y, 10))
+        d:Show()
+    end
+
+    if #drawBands == 0 then
+        local msg = self.stats.pending > 0 and L["아이템 정보를 불러오는 중입니다..."] or
+            (self.db.upgradeOnly and L["현재 조건에서 업그레이드할 아이템이 없습니다.\n('업그레이드만' 체크를 풀거나 요구 레벨 범위를 넓혀보세요)"] or L["추천할 아이템이 없습니다."])
+        ShowMessage(msg)
+    end
+
+    local s = self.stats
+    if (self.itemErrors or 0) > 0 then
+        status:SetText(format(L["일부 아이템 처리 오류 %d건 (/bgf 진단)"], self.itemErrors))
+        return
+    end
+    local pend = s.pending > 0 and format(L[" · 로딩 대기 %d"], s.pending) or ""
+    status:SetText(format(L["요구 레벨 %d~%d%s · 후보 %d개%s · 점수는 스탯 가중치 기준 추정치"], lo, hi, isAuto and L["(자동)"] or "", s.candidates, pend))
+end
+
+function ns:Toggle()
+    if not frame then
+        if not self.db then return end
+        BuildFrame()
+    end
+    if frame:IsShown() then frame:Hide() else frame:Show() end
+end

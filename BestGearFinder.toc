@@ -1,0 +1,21 @@
+## Interface: 16001
+## Title: Best Gear Finder
+## Title-koKR: 베스트 기어 파인더
+## Notes: Finds the best gear you can wear right now for your class and level - and exactly where it drops, who crafts it, or which quest gives it. DPS / Tank / Heal side by side. For WoW Forever. (/bgf)
+## Notes-koKR: 내 직업과 레벨에서 지금 입을 수 있는 최고의 장비를 찾고, 어디서 나오는지(던전·제작·퀘스트)까지 알려줍니다. 딜/탱/힐을 나란히 비교. WoW Forever용. (/bgf, /내템)
+## Author: qqhrqqhr2
+## Version: @project-version@
+## Category: Inventory
+## IconTexture: Interface\AddOns\BestGearFinder\Media\icon
+## X-License: GPL-3.0
+## X-Website: https://buymeacoffee.com/qqhrqqhr2
+## X-Donate: https://buymeacoffee.com/qqhrqqhr2
+## SavedVariables: BestGearFinderDB
+
+Locales.lua
+Data.lua
+GearDatabase.lua
+QuestData.lua
+Core.lua
+UI.lua
+Launcher.lua

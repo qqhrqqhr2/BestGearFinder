@@ -1,0 +1,8 @@
+package-as: BestGearFinder
+ignore:
+  - tools
+  - assets
+  - README.md
+  - CHANGELOG.md
+  - CURSEFORGE_DESCRIPTION.md
+  - .github
