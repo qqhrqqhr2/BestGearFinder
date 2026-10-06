@@ -1,8 +1,10 @@
 package-as: BestGearFinder
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
 ignore:
   - tools
   - assets
   - README.md
-  - CHANGELOG.md
   - CURSEFORGE_DESCRIPTION.md
   - .github

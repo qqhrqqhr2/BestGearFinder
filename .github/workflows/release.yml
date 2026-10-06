@@ -3,6 +3,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      beta:
+        description: 'Publish as beta (adds -beta to the tag)'
+        type: boolean
+        default: false
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -16,4 +22,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Create tag from CHANGELOG (manual run only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          ver=$(grep -m1 -oE '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | cut -d' ' -f2)
+          [ -n "$ver" ] || { echo "No version found in CHANGELOG.md"; exit 1; }
+          tag="v$ver"
+          if [ "${{ inputs.beta }}" = "true" ]; then tag="$tag-beta"; fi
+          if git rev-parse "$tag" >/dev/null 2>&1; then echo "Tag $tag already exists"; exit 1; fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git tag "$tag"
+          git push origin "$tag"
       - uses: BigWigsMods/packager@v2
