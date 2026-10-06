@@ -30,7 +30,7 @@ Open the window and see, slot by slot, the best items you can equip at your leve
 - `/bgf diag` - diagnostics, `/bgf donate` - support link
 
 ### Data
-All item, loot, crafting and quest data is generated offline from the CMaNGOS classic-db (1.12.x) and shipped with the addon. Sources for Forever-only items come from the AllTheThings database (MIT License) and are bundled too. No other addon is required. Boss and creature names are shown in English.
+All item, loot, crafting, quest and vendor data is generated offline from the CMaNGOS classic-db (1.12.x) plus bundled Forever-specific sources, and shipped with the addon. No other addon is required. Boss and creature names are shown in English.
 
 ---
 
@@ -61,7 +61,7 @@ All item, loot, crafting and quest data is generated offline from the CMaNGOS cl
 - `/bgf 진단` - 진단, `/bgf 후원` - 후원 링크
 
 ### 데이터
-아이템, 드랍, 제작, 퀘스트 데이터는 CMaNGOS classic-db(1.12.x)에서 미리 추출해 애드온에 포함했습니다. Forever에만 있는 아이템의 출처는 AllTheThings 데이터베이스(MIT 라이선스)에서 가져와 함께 포함했습니다. 다른 애드온이 필요 없습니다. 보스·몬스터 이름은 영어로 표시됩니다.
+아이템, 드랍, 제작, 퀘스트, 상인 데이터는 CMaNGOS classic-db(1.12.x)와 Forever 전용 출처 데이터를 미리 추출해 애드온에 포함했습니다. 다른 애드온이 필요 없습니다. 보스·몬스터 이름은 영어로 표시됩니다.
 
 ---
 

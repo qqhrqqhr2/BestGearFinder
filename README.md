@@ -17,8 +17,6 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **필터 ▼** 메뉴: 제작템, 퀘스트 보상, 월드 드랍(저확률), 업그레이드만, 몹 레벨 제한, 다른 직업 전용 숨김, 아이템 등급.
 - **슬롯 제목 클릭**: 그 슬롯을 접거나 펼칩니다. 창 오른쪽 아래 모서리를 끌면 높이를 조절할 수 있고 저장됩니다.
 - **아이템 클릭**: Shift+클릭은 채팅창에 아이템 링크 넣기, Ctrl+클릭은 착용 미리보기입니다.
-- **Forever 전용 출처 내장**: 1.12 DB에 없는 Forever 신규 아이템의 출처(던전·지역 드랍, 퀘스트, 상인, 제작)를 `ForeverExtra.lua`에 담아 배포합니다. 다른 애드온 없이 동작합니다. (데이터: AllTheThings, MIT)
-- **ATT 연동(선택)**: AllTheThings 애드온이 있으면, 출처 불명(신규) 아이템의 획득처를 그 애드온 툴팁에서 읽어와 `ATT: 던전 · 보스`로 표시하고 목록 위쪽에 올립니다.
 - **하단 상태줄**: 확인된 아이템 수를 보여줍니다. 게임에 없는 아이템은 "제외"로 표시되며, 마우스를 올리면 자세한 설명이 나옵니다.
 - 필터의 **출처가 확인된 것만**: 출처 불명(신규) 아이템과 저확률 월드 드랍을 숨깁니다. 신규 아이템은 항상 출처가 확인된 아이템 아래에 나옵니다.
 - **슬롯당 N개 ▼** 드롭다운: 슬롯마다 보여줄 아이템 수(2~10).
@@ -40,7 +38,6 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 | `/bgf 아이콘` | 화면 아이콘 숨기기/보이기 |
 | `/bgf 신규` | Forever 신규 아이템(출처 불명) 포함 켜기/끄기 |
 | `/bgf 재검색` | 신규 아이템을 처음부터 다시 검색 |
-| `/bgf att <아이템ID>` | 다른 애드온(ATT)이 툴팁에 넣는 획득처 줄을 확인(진단용) |
 | `/bgf 슬롯` | 슬롯별 후보 수·점수 진단 |
 | `/bgf 진단` | 상태 진단 |
 | `/bgf 초기화` | 창 위치 초기화 |
@@ -50,8 +47,8 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 ### 알아두기
 - 점수는 직업·역할별 스탯 가중치로 계산한 추정치입니다. 정확한 시뮬레이션이 아닙니다.
 - 보스·몬스터 이름은 DB에 한글이 없어 영어로 표시됩니다.
-- 상인이 파는 장비는 출처에 포함되지 않습니다.
-- 1.12 DB에 없는 Forever 신규 장비는 게임에서 직접 찾아 `[신규]`로 표시합니다. 어디서 나오는지는 알 수 없습니다. 처음 한 번 몇 초 걸리고, 게임 빌드가 바뀔 때까지 결과를 저장해 둡니다.
+- 1.12 데이터에서는 상인이 파는 장비가 출처에 포함되지 않습니다. 일부 Forever 전용 아이템은 상인·퀘스트·드랍 출처가 함께 들어 있습니다.
+- 1.12 DB에 없는 Forever 신규 장비는 게임에서 직접 찾아 `[신규]`로 표시합니다. 어디서 나오는지 알 수 없는 경우가 많습니다. 처음 한 번 몇 초 걸리고, 게임 빌드가 바뀔 때까지 결과를 저장해 둡니다.
 
 ---
 
@@ -68,8 +65,6 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **Filters ▼** menu: crafting, quest rewards, world drops (low chance), upgrades only, mob level limit, hide other-class items, item quality.
 - **Click a slot title** to collapse / expand it. Drag the bottom-right corner to resize the height (saved).
 - **Click an item**: Shift+click inserts its link into chat, Ctrl+click opens the dressing-room preview.
-- **Built-in Forever sources**: `ForeverExtra.lua` ships sources (dungeon/zone drops, quests, vendors, crafting) for Forever items missing from the 1.12 data; no other addon needed. (Data: AllTheThings, MIT)
-- **ATT integration (optional)**: if AllTheThings is installed, the source of [New] items is read from its tooltip and shown as `ATT: dungeon · boss`; those items are listed above unknown ones.
 - **Status line** (bottom): shows how many items were found. Items that do not exist in this game version are reported as skipped; hover for details.
 - Filter option **Known sources only** hides unknown-source [New] items and low-chance world drops. [New] items are always listed below items with known sources.
 - **Per slot: N ▼** dropdown: how many items to show per slot (2-10).
@@ -91,7 +86,6 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 | `/bgf icon` | Hide / show the on-screen icon |
 | `/bgf new` | Toggle new Forever items (source unknown) |
 | `/bgf rescan` | Search for new items again from scratch |
-| `/bgf att <itemID>` | Show the source lines other addons (ATT) add to the tooltip (diagnostics) |
 | `/bgf slot` | Per-slot candidate / score diagnostics |
 | `/bgf diag` | Status diagnostics |
 | `/bgf reset` | Reset window position |
@@ -101,20 +95,14 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 ### Notes
 - Scores are estimates from per-class/role stat weights, not a simulation.
 - Boss and creature names are English (the source DB has no Korean names).
-- Vendor-sold gear is not included as a source.
-- Forever gear that is not in the 1.12 database is found directly in the game client and marked `[New]`; where it comes from is unknown. The search takes a few seconds once and is cached until the game build changes.
+- In the 1.12 data, vendor-sold gear is not included as a source. Some Forever-only items have vendor / quest / drop sources in the bundled Forever data.
+- Forever gear that is not in the 1.12 database is found directly in the game client and marked `[New]`; where it comes from may be unknown. The search takes a few seconds once and is cached until the game build changes.
 
 ---
 
 ## Rebuild the data / 데이터 다시 만들기
     python tools/extract_cmnangos.py "ClassicDB_1_12_1_z2815.sql.gz" --output "BestGearFinder/GearDatabase.lua"
 (`--min-quality 2`, `--world-rares` optional.) Source: https://github.com/cmangos/classic-db (GPL-3.0)
-
-Forever-only sources (`ForeverExtra.lua`):
-```
-git clone --depth 1 https://github.com/ATTWoWAddon/AllTheThings.git att
-python tools/extract_att_forever.py att/.contrib/.db/forever --geardb BestGearFinder/GearDatabase.lua --quests BestGearFinder/QuestData.lua --out BestGearFinder/ForeverExtra.lua
-```
 
 ## Releasing (CurseForge / Wago)
 Releases are automated with GitHub Actions + the BigWigs packager.
@@ -127,4 +115,3 @@ Support: https://buymeacoffee.com/qqhrqqhr2
 
 ## Credits / Licenses
 - Item and loot data: CMaNGOS classic-db (GPL-3.0).
-- Forever-specific sources (`ForeverExtra.lua`): derived from the AllTheThings database, MIT License, Copyright (c) 2026 AllTheThings WoW Addon (`LICENSE-ATT.txt`).

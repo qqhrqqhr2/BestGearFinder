@@ -205,7 +205,7 @@ local function ScanNewItems()
     end
 end
 
--- Forever 전용 획득처 (ATT 데이터에서 추출, ForeverExtra.lua): CMaNGOS 1.12 DB에 없는 아이템의 출처
+-- Forever 전용 획득처 (ForeverExtra.lua): CMaNGOS 1.12 DB에 없는 아이템의 출처
 local function IndexForeverExtra()
     local X = ns.ForeverExtra
     local st = ns.indexStats
@@ -532,7 +532,7 @@ function ns:Compute()
                     local known, unknown = {}, {}
                     for _, pk in ipairs(picked) do
                         local ps = ns:PrimarySource(pk.rec)
-                        if ps and ps.kind == "unknown" and not ns:ReadExternalSource(pk.id, pk.link) then
+                        if ps and ps.kind == "unknown" then
                             unknown[#unknown + 1] = pk
                         else
                             known[#known + 1] = pk
@@ -619,70 +619,6 @@ end
 local KIND_PRIORITY = { drop = 1, quest = 2, craft = 3, vendor = 4 }
 
 -- 화면에 표시할 대표 출처: 드랍 > 퀘스트 > 제작 순, 꺼진/완료된 출처는 제외
--- AllTheThings(ATT) 같은 다른 애드온이 툴팁에 넣어 주는 획득처("ATT > 분류 > 던전 > 보스")를 읽어 온다.
--- 출처 불명(신규) 아이템의 출처를 보충하는 용도이며, 해당 애드온이 없으면 아무 일도 하지 않는다.
-ns.attSrc, ns.attTry = {}, {}
-local scanTip
-local function StripCodes(t)
-    return (t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T.-|t", ""))
-end
-local function ScanLines(link)
-    if not CreateFrame then return nil end
-    if not scanTip then
-        local ok, tip = pcall(CreateFrame, "GameTooltip", "BestGearFinderScanTip", nil, "GameTooltipTemplate")
-        if not ok or not tip then return nil end
-        scanTip = tip
-    end
-    scanTip:SetOwner(UIParent, "ANCHOR_NONE")
-    scanTip:ClearLines()
-    if not pcall(scanTip.SetHyperlink, scanTip, link) then return nil end
-    local lines = {}
-    for i = 1, (scanTip:NumLines() or 0) do
-        local fs = _G["BestGearFinderScanTipTextLeft" .. i]
-        local t = fs and fs:GetText()
-        if t and t ~= "" then lines[#lines + 1] = StripCodes(t) end
-    end
-    return lines
-end
-function ns:HasExternalSource()
-    return _G.AllTheThings ~= nil or _G.ATTC ~= nil or _G.ATT ~= nil
-end
-function ns:ReadExternalSource(id, link)
-    local c = ns.attSrc[id]
-    if c ~= nil then return c or nil end
-    local lines = ScanLines(link or ("item:" .. id))
-    local found = false
-    for _, t in ipairs(lines or {}) do
-        -- 한국어 글꼴/클라이언트에서는 구분 기호가 〉 등 다른 모양일 수 있어 ">" 로 통일한다
-        t = t:gsub("〉", ">"):gsub("›", ">"):gsub("»", ">"):gsub("%s*>%s*", " > ")
-        local rest = t:match("^%s*ATT > (.+)$")
-        if rest then
-            local seg = {}
-            for raw in (rest .. " > "):gmatch("(.-) > ") do
-                local part = raw:gsub("^%s+", ""):gsub("%s+$", "")
-                if part ~= "" then seg[#seg + 1] = part end
-            end
-            if #seg >= 3 then found = seg[#seg - 1] .. " · " .. seg[#seg]
-            elseif #seg >= 1 then found = table.concat(seg, " · ") end
-            break
-        end
-    end
-    if found then
-        ns.attSrc[id] = found
-        return found
-    end
-    -- 다른 애드온이 줄을 추가하는 데 시간이 걸릴 수 있어, 몇 번 더 시도한 뒤에 없음으로 확정한다
-    ns.attTry[id] = (ns.attTry[id] or 0) + 1
-    if ns.attTry[id] >= 3 then ns.attSrc[id] = false end
-    return nil
-end
-function ns:DumpTooltip(id)
-    local lines = ScanLines("item:" .. id)
-    if not lines then Print("tooltip scan unavailable") return end
-    Print(string.format("item %d: %d lines (ATT loaded: %s)", id, #lines, tostring(ns:HasExternalSource())))
-    for i, t in ipairs(lines) do Print(i .. ": " .. t) end
-end
-
 function ns:PrimarySource(rec)
     local best, bestP
     for _, s in ipairs(rec.src) do
@@ -816,7 +752,6 @@ end
 
 -- '검색' 버튼: 캐시/대기 상태를 비우고 현재 착용 장비 기준으로 처음부터 다시 계산
 function ns:ForceRefresh()
-    wipe(ns.attSrc) wipe(ns.attTry)
     wipe(requested)
     wipe(queue)
     if self.indexState == "empty" then self:ResetIndex() end
@@ -971,9 +906,6 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         db.newItems = not db.newItems
         Print(L["신규 아이템(출처 불명) 포함: "] .. (db.newItems and L["켜짐"] or L["꺼짐"]))
         ns:Refresh(true)
-    elseif msg:match("^att") then
-        local id = tonumber(msg:match("(%d+)"))
-        if id then ns:DumpTooltip(id) else Print("/bgf att <itemID>") end
     elseif msg == "rescan" or msg == "재검색" then
         db.scan = {}
         Print(L["신규 아이템을 처음부터 다시 검색합니다."])
