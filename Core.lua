@@ -205,6 +205,39 @@ local function ScanNewItems()
     end
 end
 
+-- Forever 전용 획득처 (ATT 데이터에서 추출, ForeverExtra.lua): CMaNGOS 1.12 DB에 없는 아이템의 출처
+local function IndexForeverExtra()
+    local X = ns.ForeverExtra
+    local st = ns.indexStats
+    st.extra = 0
+    if type(X) ~= "table" then return end
+    local idx = ns.index
+    local function Rec(id)
+        local rec = idx[id]
+        if rec == nil then
+            rec = MakeRecord(id)
+            idx[id] = rec
+            if rec then st.items = st.items + 1 end
+        end
+        return rec or nil
+    end
+    local function Each(tbl, fn)
+        if type(tbl) ~= "table" then return end
+        for id, list in pairs(tbl) do
+            local rec = Rec(id)
+            if rec then
+                st.extra = st.extra + 1
+                for _, e in ipairs(list) do fn(rec, e) end
+            end
+            MaybeYield()
+        end
+    end
+    Each(X.drops, function(rec, e) AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc }) end)
+    Each(X.quests, function(rec, e) AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false }) end)
+    Each(X.vendors, function(rec, e) AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc }) end)
+    Each(X.craft, function(rec, e) AddSource(rec, e.skill, "", nil, "craft", nil, {}) end)
+end
+
 local function IndexBody()
     local idx = ns.index
     local st = ns.indexStats
@@ -254,6 +287,7 @@ local function IndexBody()
     end
 
     IndexQuests()
+    IndexForeverExtra()
     ScanNewItems()
 end
 
@@ -582,7 +616,7 @@ function ns:QuestTitle(s)
     return t
 end
 
-local KIND_PRIORITY = { drop = 1, quest = 2, craft = 3 }
+local KIND_PRIORITY = { drop = 1, quest = 2, craft = 3, vendor = 4 }
 
 -- 화면에 표시할 대표 출처: 드랍 > 퀘스트 > 제작 순, 꺼진/완료된 출처는 제외
 -- AllTheThings(ATT) 같은 다른 애드온이 툴팁에 넣어 주는 획득처("ATT > 분류 > 던전 > 보스")를 읽어 온다.
@@ -681,6 +715,7 @@ function ns:ShortSource(rec)
     if s.kind == "unknown" then return L["출처 불명 (신규)"] end
     if s.kind == "craft" then return L["제작:"] .. LocInst(s.inst) end
     if s.kind == "quest" then return L["퀘스트:"] .. self:QuestTitle(s) end
+    if s.kind == "vendor" then return L["상인:"] .. (s.boss or "?") end
     if s.chance and s.chance < (db.minChance or 0) then return L["월드 드랍"] end
     return LocInst(s.inst)
 end
@@ -696,6 +731,9 @@ function ns:FormatSource(s)
         local t = L["퀘스트: "] .. self:QuestTitle(s) .. " (Lv." .. (s.ql or "?")
         if s.ml and s.ml > 0 then t = t .. L[", 수락 Lv."] .. s.ml end
         return t .. ") · " .. (s.choice and L["선택 보상"] or L["확정 보상"])
+    end
+    if s.kind == "vendor" then
+        return L["상인: "] .. (s.boss or "?") .. " (" .. LocInst(s.inst) .. ")"
     end
     if s.chance and s.chance < (db.minChance or 0) then
         return string.format(L["월드 드랍 - 잡몹 (%.3f%%)"], s.chance)

@@ -619,6 +619,7 @@ function ns:UpdateUI()
                     if ps and ps.kind == "unknown" then mark = mark .. L["|cffff80ff[신규]|r "] end
                     if ps and ps.kind == "craft" then mark = mark .. L["|cff66ccff[제작]|r "] end
                     if ps and ps.kind == "quest" then mark = mark .. L["|cffffcc33[퀘스트]|r "] end
+                    if ps and ps.kind == "vendor" then mark = mark .. L["|cff99ff99[상인]|r "] end
                     r.name:SetText(mark .. e.link)
                     local srcText
                     if ps and ps.kind == "unknown" then

@@ -18,6 +18,7 @@ Locales.lua
 Data.lua
 GearDatabase.lua
 QuestData.lua
+ForeverExtra.lua
 Core.lua
 UI.lua
 Launcher.lua

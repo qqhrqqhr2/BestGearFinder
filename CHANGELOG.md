@@ -7,6 +7,7 @@
 - Click a slot title to collapse / expand it.
 - Drag the bottom-right corner to resize the window height (saved).
 - Tooltips on the top buttons.
+- Built-in Forever sources: ForeverExtra.lua (generated from the AllTheThings database, MIT license) adds dungeon/zone drops, quest rewards, vendors and crafting sources for items that are not in the 1.12 data, so [New] items now show where they come from without any other addon.
 - Optional AllTheThings integration: sources for [New] items are read from ATT tooltip lines when ATT is installed. `/bgf att <itemID>` dumps the tooltip lines for diagnostics.
 
 ## 1.0.2

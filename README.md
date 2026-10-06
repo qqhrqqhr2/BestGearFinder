@@ -17,6 +17,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **필터 ▼** 메뉴: 제작템, 퀘스트 보상, 월드 드랍(저확률), 업그레이드만, 몹 레벨 제한, 다른 직업 전용 숨김, 아이템 등급.
 - **슬롯 제목 클릭**: 그 슬롯을 접거나 펼칩니다. 창 오른쪽 아래 모서리를 끌면 높이를 조절할 수 있고 저장됩니다.
 - **아이템 클릭**: Shift+클릭은 채팅창에 아이템 링크 넣기, Ctrl+클릭은 착용 미리보기입니다.
+- **Forever 전용 출처 내장**: 1.12 DB에 없는 Forever 신규 아이템의 출처(던전·지역 드랍, 퀘스트, 상인, 제작)를 `ForeverExtra.lua`에 담아 배포합니다. 다른 애드온 없이 동작합니다. (데이터: AllTheThings, MIT)
 - **ATT 연동(선택)**: AllTheThings 애드온이 있으면, 출처 불명(신규) 아이템의 획득처를 그 애드온 툴팁에서 읽어와 `ATT: 던전 · 보스`로 표시하고 목록 위쪽에 올립니다.
 - **하단 상태줄**: 확인된 아이템 수를 보여줍니다. 게임에 없는 아이템은 "제외"로 표시되며, 마우스를 올리면 자세한 설명이 나옵니다.
 - 필터의 **출처가 확인된 것만**: 출처 불명(신규) 아이템과 저확률 월드 드랍을 숨깁니다. 신규 아이템은 항상 출처가 확인된 아이템 아래에 나옵니다.
@@ -67,6 +68,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **Filters ▼** menu: crafting, quest rewards, world drops (low chance), upgrades only, mob level limit, hide other-class items, item quality.
 - **Click a slot title** to collapse / expand it. Drag the bottom-right corner to resize the height (saved).
 - **Click an item**: Shift+click inserts its link into chat, Ctrl+click opens the dressing-room preview.
+- **Built-in Forever sources**: `ForeverExtra.lua` ships sources (dungeon/zone drops, quests, vendors, crafting) for Forever items missing from the 1.12 data; no other addon needed. (Data: AllTheThings, MIT)
 - **ATT integration (optional)**: if AllTheThings is installed, the source of [New] items is read from its tooltip and shown as `ATT: dungeon · boss`; those items are listed above unknown ones.
 - **Status line** (bottom): shows how many items were found. Items that do not exist in this game version are reported as skipped; hover for details.
 - Filter option **Known sources only** hides unknown-source [New] items and low-chance world drops. [New] items are always listed below items with known sources.
@@ -108,6 +110,12 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
     python tools/extract_cmnangos.py "ClassicDB_1_12_1_z2815.sql.gz" --output "BestGearFinder/GearDatabase.lua"
 (`--min-quality 2`, `--world-rares` optional.) Source: https://github.com/cmangos/classic-db (GPL-3.0)
 
+Forever-only sources (`ForeverExtra.lua`):
+```
+git clone --depth 1 https://github.com/ATTWoWAddon/AllTheThings.git att
+python tools/extract_att_forever.py att/.contrib/.db/forever --geardb BestGearFinder/GearDatabase.lua --quests BestGearFinder/QuestData.lua --out BestGearFinder/ForeverExtra.lua
+```
+
 ## Releasing (CurseForge / Wago)
 Releases are automated with GitHub Actions + the BigWigs packager.
 1. Commit changes to `main` and test in game.
@@ -116,3 +124,7 @@ Releases are automated with GitHub Actions + the BigWigs packager.
 Secrets required: `CF_API_KEY`, `WAGO_API_TOKEN`.
 
 Support: https://buymeacoffee.com/qqhrqqhr2
+
+## Credits / Licenses
+- Item and loot data: CMaNGOS classic-db (GPL-3.0).
+- Forever-specific sources (`ForeverExtra.lua`): derived from the AllTheThings database, MIT License, Copyright (c) 2026 AllTheThings WoW Addon (`LICENSE-ATT.txt`).
