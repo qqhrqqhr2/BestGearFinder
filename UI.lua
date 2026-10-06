@@ -11,6 +11,7 @@ local ROW_H, HEADER_H = 36, 18
 local rows, headers, colHeaders, dividers, hbtns = {}, {}, {}, {}, {}
 local qualChk, menuChecks, chanceEdit = {}, {}, nil
 local aucChk
+local progress
 local frame, scroll, child, status, perBtn, minEdit, maxEdit, upChk, craftChk, questChk, titleText
 local nCols, colW, frameW = 1, 400, MIN_FRAME_W
 
@@ -446,6 +447,19 @@ local function BuildFrame()
     status:SetJustifyH("LEFT")
     status:SetWordWrap(false)
 
+    -- 하단 진행 막대 (데이터를 불러오는 동안만 표시)
+    progress = CreateFrame("StatusBar", nil, frame)
+    progress:SetPoint("BOTTOMLEFT", 20, 9)
+    progress:SetPoint("BOTTOMRIGHT", -40, 9)
+    progress:SetHeight(6)
+    progress:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    progress:SetStatusBarColor(0.2, 0.75, 0.3)
+    progress:SetMinMaxValues(0, 1)
+    local pbg = progress:CreateTexture(nil, "BACKGROUND")
+    pbg:SetAllPoints()
+    pbg:SetColorTexture(0, 0, 0, 0.6)
+    progress:Hide()
+
     local statusBtn = CreateFrame("Button", nil, frame)
     statusBtn:SetPoint("BOTTOMLEFT", 20, 14)
     statusBtn:SetPoint("BOTTOMRIGHT", -40, 14)
@@ -511,8 +525,20 @@ local function ShowMessage(text)
     child:SetHeight(120)
 end
 
+local function SetProgress(frac)
+    if not progress then return end
+    if frac == nil then progress:Hide(); return end
+    progress:SetValue(math.max(0, math.min(1, frac)))
+    progress:Show()
+end
+
 function ns:UpdateProgress()
     if status and self.indexState == "running" then
+        if self.indexStats.scanned then
+            SetProgress(self.indexStats.scanned / 400000)
+        else
+            SetProgress(nil)
+        end
         if self.indexStats.scanned then
             status:SetText(string.format(L["신규 아이템 검색 중... (%d / %d) 처음 한 번만 걸립니다"], self.indexStats.scanned, 400000))
         else
@@ -534,6 +560,7 @@ function ns:UpdateUI()
     if chanceEdit and not chanceEdit:HasFocus() then chanceEdit:SetText(tostring(self.db.minChance or 0)) end
     for _, cb in ipairs(qualChk) do cb:SetChecked(self.db.qual[cb.q] and true or false) end
 
+    SetProgress(nil)
     local state = self.indexState
     if self.lastError and state == "done" then
         ShowMessage(L["계산 중 오류가 발생했습니다.\n\n"] .. tostring(self.lastError):sub(1, 400) .. L["\n\n(채팅창에도 출력됩니다. 이 내용을 알려주세요)"])
@@ -663,6 +690,7 @@ function ns:UpdateUI()
     end
     local pend = ""
     if s.pending > 0 then
+        SetProgress(s.ready / math.max(1, s.ready + s.pending))
         pend = format(L[" · %d개 불러오는 중"], s.pending)
     elseif (s.skipped or 0) > 0 then
         pend = format(L[" · 게임에 없는 %d개 제외"], s.skipped)
