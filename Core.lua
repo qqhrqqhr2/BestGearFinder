@@ -620,10 +620,15 @@ function ns:ReadExternalSource(id, link)
     local lines = ScanLines(link or ("item:" .. id))
     local found = false
     for _, t in ipairs(lines or {}) do
-        local rest = t:match("^ATT > (.+)$")
+        -- 한국어 글꼴/클라이언트에서는 구분 기호가 〉 등 다른 모양일 수 있어 ">" 로 통일한다
+        t = t:gsub("〉", ">"):gsub("›", ">"):gsub("»", ">"):gsub("%s*>%s*", " > ")
+        local rest = t:match("^%s*ATT > (.+)$")
         if rest then
             local seg = {}
-            for part in (rest .. " > "):gmatch("(.-) > ") do if part ~= "" then seg[#seg + 1] = part end end
+            for raw in (rest .. " > "):gmatch("(.-) > ") do
+                local part = raw:gsub("^%s+", ""):gsub("%s+$", "")
+                if part ~= "" then seg[#seg + 1] = part end
+            end
             if #seg >= 3 then found = seg[#seg - 1] .. " · " .. seg[#seg]
             elseif #seg >= 1 then found = table.concat(seg, " · ") end
             break
