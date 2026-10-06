@@ -539,11 +539,7 @@ function ns:UpdateProgress()
         else
             SetProgress(nil)
         end
-        if self.indexStats.scanned then
-            status:SetText(string.format(L["신규 아이템 검색 중... (%d / %d) 처음 한 번만 걸립니다"], self.indexStats.scanned, 400000))
-        else
-            status:SetText(string.format(L["CMaNGOS 데이터 인덱싱 중... (아이템 %d개)"], self.indexStats.items or 0))
-        end
+        status:SetText("")
     end
 end
 
@@ -568,7 +564,7 @@ function ns:UpdateUI()
         return
     end
     if state == "idle" or state == "running" then
-        ShowMessage(L["CMaNGOS 데이터를 인덱싱하는 중입니다..."])
+        ShowMessage(L["아이템 정보를 불러오는 중입니다..."])
         self:UpdateProgress()
         return
     elseif state == "empty" then
