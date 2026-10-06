@@ -621,8 +621,13 @@ function ns:UpdateUI()
                     if ps and ps.kind == "quest" then mark = mark .. L["|cffffcc33[퀘스트]|r "] end
                     if ps and ps.kind == "vendor" then mark = mark .. L["|cff99ff99[상인]|r "] end
                     r.name:SetText(mark .. e.link)
-                    r.sub:SetText(format(L["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"], e.ilvl, e.req,
-                        self:ShortSource(e.rec)))
+                    if (e.req or 0) > 0 then
+                        r.sub:SetText(format(L["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"], e.ilvl, e.req,
+                            self:ShortSource(e.rec)))
+                    else
+                        r.sub:SetText(format(L["|cffffd100%d|r |cffaaaaaa· 요구 없음 · %s|r"], e.ilvl,
+                            self:ShortSource(e.rec)))
+                    end
                     r:Show()
                 end
             end

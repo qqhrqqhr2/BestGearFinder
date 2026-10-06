@@ -440,6 +440,12 @@ local function Request(id)
     end
 end
 
+-- 요구 레벨이 없는(0) 아이템은 아이템 레벨을 요구 레벨 대신 사용
+local function EffReq(req, ilvl)
+    if req and req > 0 then return req end
+    return math.max(1, math.min(ilvl or 1, 60))
+end
+
 function ns:Compute()
     local _, class = UnitClass("player")
     local rules = ns.CLASS_RULES[class]
@@ -471,7 +477,7 @@ function ns:Compute()
                 if dead[id] then skipped = skipped + 1 else pending = pending + 1 end
             else
                 ready = ready + 1
-                if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and not IsAbilityRelic(id, rec) and (reqLevel or 0) <= maxReq and (reqLevel or 0) >= minReq then
+                if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and not IsAbilityRelic(id, rec) and EffReq(reqLevel, ilvl) <= maxReq and EffReq(reqLevel, ilvl) >= minReq then
                     local entry = { id = id, link = link, ilvl = ilvl or 0, req = reqLevel or 0, rec = rec, quality = quality }
                     for _, g in ipairs(locToGroups[rec.loc]) do
                         table.insert(buckets[g.key], entry)

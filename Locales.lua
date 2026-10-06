@@ -44,6 +44,7 @@ local en = {
     ["|cffff5555계산 중 오류:|r "] = "|cffff5555Calculation error:|r ",
     ["|cffff5555화면 갱신 오류:|r "] = "|cffff5555UI update error:|r ",
     ["|cffffcc33[퀘스트]|r "] = "|cffffcc33[Quest]|r ",
+    ["|cffffd100%d|r |cffaaaaaa· 요구 없음 · %s|r"] = "|cffffd100%d|r |cffaaaaaa· No req · %s|r",
     ["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"] = "|cffffd100%d|r |cffaaaaaa· Req %d · %s|r",
     ["가라앉은 사원"] = "Sunken Temple",
     ["가슴"] = "Chest",
