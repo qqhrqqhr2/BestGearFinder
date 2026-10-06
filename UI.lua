@@ -636,6 +636,13 @@ function ns:UpdateUI()
         end
     end
     child:SetHeight(math.max(y, 10))
+    -- 스크롤 범위를 즉시 다시 계산 (슬롯당 개수를 바꿔 높이가 커져도 끝까지 스크롤되도록)
+    if scroll.UpdateScrollChildRect then scroll:UpdateScrollChildRect() end
+    C_Timer.After(0, function()
+        if scroll and scroll.UpdateScrollChildRect then scroll:UpdateScrollChildRect() end
+        local range = scroll and scroll.GetVerticalScrollRange and scroll:GetVerticalScrollRange()
+        if range and scroll:GetVerticalScroll() > range then scroll:SetVerticalScroll(range) end
+    end)
     for i, d in ipairs(dividers) do
         d:ClearAllPoints()
         d:SetPoint("TOPLEFT", child, "TOPLEFT", i * colW, 0)
