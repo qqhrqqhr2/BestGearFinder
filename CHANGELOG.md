@@ -1,7 +1,7 @@
 # Changelog - Best Gear Finder
 
 ## 1.0.4
-- Progress bar at the bottom while item data is loading.
+- Progress bar at the bottom while item data is loading; the indexing message is gone.
 - Quest rewards are now shown whether or not you have already completed the quest.
 - Toy-like items that are not weapons or armor (e.g. novelty "ranged" items) are no longer listed.
 - Faster item loading: requests are sent 3x faster and items in your level range are requested first.
