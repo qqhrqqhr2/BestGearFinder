@@ -622,7 +622,7 @@ local function SrcAllowed(src)
     if k == "craft" then return db.crafting and true or false end
     if db.sourcedOnly and (k == "unknown" or (src.chance and src.chance < (db.minChance or 0))) then return false end
     if k == "unknown" then return db.newItems and true or false end
-    if k == "quest" then return (db.quests and not QuestDone(src.qid)) and true or false end
+    if k == "quest" then return db.quests and true or false end   -- 완료/보유 여부와 무관하게 표시
     -- 드랍: 보스(확정 드랍 등)는 항상, 일반 몹의 극저확률 드랍은 최소 드랍률 미만이면 제외
     -- 드랍률이 아주 낮은 출처는 월드 잡몹의 저확률 드랍: '월드 드랍' 옵션이 켜져 있을 때만 포함
     if src.chance and src.chance < (db.minChance or 0) then return db.auction and true or false end
@@ -657,7 +657,7 @@ end
 
 local KIND_PRIORITY = { drop = 1, quest = 2, craft = 3, vendor = 4 }
 
--- 화면에 표시할 대표 출처: 드랍 > 퀘스트 > 제작 순, 꺼진/완료된 출처는 제외
+-- 화면에 표시할 대표 출처: 드랍 > 퀘스트 > 제작 순, 꺼진 출처는 제외
 function ns:PrimarySource(rec)
     local best, bestP
     for _, s in ipairs(rec.src) do

@@ -212,7 +212,7 @@ local function BuildFrame()
     end
     Header(L["출처"])
     craftChk = Check(L["제작템 포함"], "crafting", L["전문기술로 만드는 장비를 포함합니다."])
-    questChk = Check(L["퀘스트 보상"], "quests", L["아직 완료하지 않은 퀘스트의 보상을 포함합니다."])
+    questChk = Check(L["퀘스트 보상"], "quests", L["퀘스트 보상을 포함합니다. (완료 여부와 상관없이 표시)"])
     aucChk = Check(L["월드 드랍 (저확률)"], "auction", L["던전이 아닌 월드의 여러 잡몹이 아주 낮은 확률로 떨어뜨리는 아이템을 포함합니다."])
     local ce = CreateFrame("EditBox", nil, menu, "InputBoxTemplate")
     ce:SetSize(40, 18)
