@@ -23,6 +23,7 @@ local en = {
     [" / 첫 오류: "] = " / First error: ",
     [" [도안 필요]"] = " [recipe required]",
     [" · 로딩 대기 %d"] = " · %d loading",
+    [" · 게임에 없는 아이템 %d개 제외"] = " · %d items not in this game version skipped",
     [" 외 "] = " and ",
     [" 외 %d"] = " and %d more",
     [" 외 %d곳"] = " and %d more",

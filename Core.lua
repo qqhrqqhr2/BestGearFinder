@@ -663,7 +663,7 @@ end
 
 function ns:Refresh(userAction)
     if not (self.frame and self.frame:IsShown()) then return end
-    if userAction then stall = 0; lastPending = -1 end
+    if userAction then stall = 0; lastPending = -1; self.pendingStalled = false end
     self:EnsureIndex()
     if self.indexState == "idle" or self.indexState == "running" then
         self:UpdateUI()
@@ -687,9 +687,11 @@ function ns:Refresh(userAction)
         if pending > 0 then
             if pending >= lastPending and lastPending >= 0 then stall = stall + 1 else stall = 0 end
             lastPending = pending
+            self.pendingStalled = stall >= 6
             if stall < 6 then self:ScheduleRefresh(1.5) end
         else
             lastPending, stall = -1, 0
+            self.pendingStalled = false
         end
     end
     self:UpdateUI()

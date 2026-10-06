@@ -565,7 +565,10 @@ function ns:UpdateUI()
         status:SetText(format(L["일부 아이템 처리 오류 %d건 (/bgf 진단)"], self.itemErrors))
         return
     end
-    local pend = s.pending > 0 and format(L[" · 로딩 대기 %d"], s.pending) or ""
+    local pend = ""
+    if s.pending > 0 then
+        pend = format(self.pendingStalled and L[" · 게임에 없는 아이템 %d개 제외"] or L[" · 로딩 대기 %d"], s.pending)
+    end
     status:SetText(format(L["요구 레벨 %d~%d%s · 후보 %d개%s · 점수는 스탯 가중치 기준 추정치"], lo, hi, isAuto and L["(자동)"] or "", s.candidates, pend))
 end
 
