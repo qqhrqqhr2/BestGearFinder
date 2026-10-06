@@ -896,6 +896,10 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         local dw = rules.dualWield and level >= (ns.DUAL_WIELD_LEVEL[class] or 99) or false
         local minReq, maxReq = ns:GetRange()
         P(("loc=%s class=%s sub=%s new=%s"):format(tostring(rec.loc), tostring(rec.classID), tostring(rec.subID), tostring(rec.new)))
+        for _, sr in ipairs(rec.src) do
+            P(("src kind=%s inst=%s allowed=%s%s"):format(tostring(sr.kind), tostring(sr.inst), tostring(SrcAllowed(sr)),
+                sr.qid and (" qid=" .. sr.qid .. " done=" .. tostring(QuestDone(sr.qid))) or ""))
+        end
         P("sourceAllowed=" .. tostring(ns:SourceAllowed(rec)) .. " usable=" .. tostring(Usable(rec, rules, GetArmorType(rules, level), dw)))
         local name, _, quality, ilvl, req = GetItemInfoC(id)
         P(("name=%s quality=%s ilvl=%s req=%s effReq=%s range=%d-%d"):format(tostring(name), tostring(quality), tostring(ilvl), tostring(req), tostring(name and EffReq(req, ilvl)), minReq, maxReq))
