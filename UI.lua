@@ -8,7 +8,7 @@ local COL_MIN_W = 236
 local SIDE_PAD = 56          -- 스크롤바/여백 합계
 local ROW_H, HEADER_H = 36, 18
 
-local rows, headers, colHeaders, dividers = {}, {}, {}, {}
+local rows, headers, colHeaders, dividers, hbtns = {}, {}, {}, {}, {}
 local qualChk, menuChecks, chanceEdit = {}, {}, nil
 local aucChk
 local frame, scroll, child, status, perBtn, minEdit, maxEdit, upChk, craftChk, questChk, titleText
@@ -117,8 +117,17 @@ local function BuildFrame()
     colW = (frameW - SIDE_PAD) / nCols
 
     local template = BackdropTemplateMixin and "BackdropTemplate" or nil
+    local function Tip(btn, title, text)
+        btn:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+            GameTooltip:AddLine(title, 1, 1, 1)
+            if text then GameTooltip:AddLine(text, 0.8, 0.8, 0.8, true) end
+            GameTooltip:Show()
+        end)
+        btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    end
     frame = CreateFrame("Frame", "BestGearFinderFrame", UIParent, template)
-    frame:SetSize(frameW, FRAME_H)
+    frame:SetSize(frameW, math.max(320, math.min(1000, (ns.db and ns.db.height) or FRAME_H)))
     frame:SetFrameStrata("HIGH")
     frame:SetClampedToScreen(true)
     frame:SetMovable(true)
@@ -167,6 +176,7 @@ local function BuildFrame()
     filterBtn:SetPoint("TOPLEFT", 16, -34)
     filterBtn:SetText(L["필터 ▼"])
     filterBtn:SetScript("OnClick", function() if menu:IsShown() then menu:Hide() else menu:Show() end end)
+    Tip(filterBtn, L["필터"], L["출처, 조건, 아이템 등급을 선택합니다."])
     menu:SetPoint("TOPLEFT", filterBtn, "BOTTOMLEFT", 0, -2)
     local my = -10
     local function Header(text)
@@ -228,6 +238,7 @@ local function BuildFrame()
     Check(L["화면에 아이콘 표시"], "iconShown", L["게임 화면에 떠 있는 실행 아이콘을 보여줍니다. 드래그해서 옮길 수 있습니다."])
     Check(L["신규 아이템 포함 (출처 불명)"], "newItems", L["1.12 DB에 없는 Forever 신규 장비를 게임에서 직접 찾아 포함합니다. 어디서 나오는지는 알 수 없습니다."])
     Check(L["몹 레벨 제한 (범위+8)"], "mobCut", L["출처 몬스터의 레벨이 요구 레벨 상한+8을 넘으면 제외합니다."])
+    Check(L["출처가 확인된 것만"], "sourcedOnly", L["던전·제작·퀘스트 등 획득처가 확인된 아이템만 보여줍니다. 출처를 알 수 없는 신규 아이템과 저확률 월드 드랍은 제외됩니다."])
     Check(L["다른 직업 전용 숨김"], "classFilter", L["툴팁에 직업 제한이 있고 내 직업이 아니면 제외합니다."])
     Header(L["등급"])
     local QUALS = {
@@ -258,6 +269,7 @@ local function BuildFrame()
     donateBtn:SetPoint("TOPRIGHT", -40, -36)
     donateBtn:SetText(L["후원"])
     donateBtn:SetScript("OnClick", function() ns:ShowDonate() end)
+    Tip(donateBtn, L["후원"], L["애드온이 마음에 드셨다면 후원 링크를 복사할 수 있습니다."])
 
     -- 슬롯당 개수 드롭다운 (2~10)
     perBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
@@ -289,6 +301,7 @@ local function BuildFrame()
             ns:Refresh(true)
         end)
     end
+    Tip(perBtn, L["슬롯당 표시 개수"], L["각 슬롯마다 보여줄 아이템 수를 2~10개 중에서 고릅니다."])
     perBtn:SetScript("OnClick", function()
         if perMenu:IsShown() then perMenu:Hide() else perMenu:Show() end
     end)
@@ -328,6 +341,7 @@ local function BuildFrame()
             ns:RebuildUI()
         end)
     end
+    Tip(langBtn, L["언어"], L["표시 언어를 고릅니다. 고르면 창이 바로 새로 열립니다."])
     langBtn:SetScript("OnClick", function()
         if langMenu:IsShown() then langMenu:Hide() else langMenu:Show() end
     end)
@@ -432,10 +446,53 @@ local function BuildFrame()
     status:SetJustifyH("LEFT")
     status:SetWordWrap(false)
 
+    local statusBtn = CreateFrame("Button", nil, frame)
+    statusBtn:SetPoint("BOTTOMLEFT", 20, 14)
+    statusBtn:SetPoint("BOTTOMRIGHT", -40, 14)
+    statusBtn:SetHeight(18)
+    statusBtn:SetScript("OnEnter", function(btn)
+        local st = ns.stats
+        GameTooltip:SetOwner(btn, "ANCHOR_TOP")
+        GameTooltip:AddLine(L["아이템 현황"], 1, 1, 1)
+        GameTooltip:AddLine(format(L["조건에 맞는 후보: %d개"], st.candidates), 0.8, 0.8, 0.8)
+        GameTooltip:AddLine(format(L["게임에서 확인된 아이템: %d개"], st.ready), 0.6, 0.9, 0.6)
+        if st.pending > 0 then
+            GameTooltip:AddLine(format(L["확인되지 않은 아이템: %d개 (게임에 없는 아이템이면 계속 확인되지 않습니다)"], st.pending), 1, 0.82, 0, true)
+        end
+        GameTooltip:AddLine(L["점수는 직업·역할별 스탯 가중치로 계산한 추정치입니다."], 0.7, 0.7, 0.7, true)
+        GameTooltip:Show()
+    end)
+    statusBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    -- 창 높이 조절 (오른쪽 아래 모서리를 드래그)
+    pcall(function()
+        frame:SetResizable(true)
+        if frame.SetResizeBounds then frame:SetResizeBounds(frameW, 320, frameW, 1000)
+        elseif frame.SetMinResize then frame:SetMinResize(frameW, 320) frame:SetMaxResize(frameW, 1000) end
+    end)
+    local grip = CreateFrame("Button", nil, frame)
+    grip:SetSize(16, 16)
+    grip:SetPoint("BOTTOMRIGHT", -8, 8)
+    grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+    grip:SetScript("OnMouseDown", function() frame:StartSizing("BOTTOM") end)
+    grip:SetScript("OnMouseUp", function()
+        frame:StopMovingOrSizing()
+        ns.db.height = math.floor(frame:GetHeight())
+    end)
+    grip:SetScript("OnEnter", function(g)
+        GameTooltip:SetOwner(g, "ANCHOR_LEFT")
+        GameTooltip:AddLine(L["드래그해서 창 높이를 조절합니다."], 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    grip:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     ns.frame = frame
 end
 
 local function HideAll()
+    for _, b in ipairs(hbtns) do b:Hide() end
     for _, r in ipairs(rows) do r:Hide() end
     for _, h in ipairs(headers) do h:Hide() end
     for _, d in ipairs(dividers) do d:Hide() end
@@ -518,9 +575,34 @@ function ns:UpdateUI()
         h:ClearAllPoints()
         h:SetPoint("TOPLEFT", child, "TOPLEFT", 4, -y - 2)
         h:SetWidth(colW * nCols - 8)
-        h:SetText(band.group.label)
+        local collapsed = self.db.collapsed and self.db.collapsed[band.group.key]
+        h:SetText((collapsed and "+ " or "- ") .. band.group.label)
         h:Show()
+        local hb = hbtns[hdrN]
+        if not hb then
+            hb = CreateFrame("Button", nil, child)
+            hb:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+            hb:SetScript("OnClick", function(btn)
+                local d = ns.db
+                d.collapsed = d.collapsed or {}
+                d.collapsed[btn.key] = (not d.collapsed[btn.key]) or nil
+                ns:UpdateUI()
+            end)
+            hb:SetScript("OnEnter", function(btn)
+                GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+                GameTooltip:AddLine(L["클릭하면 이 슬롯을 접거나 펼칩니다."], 1, 1, 1)
+                GameTooltip:Show()
+            end)
+            hb:SetScript("OnLeave", function() GameTooltip:Hide() end)
+            hbtns[hdrN] = hb
+        end
+        hb.key = band.group.key
+        hb:ClearAllPoints()
+        hb:SetPoint("TOPLEFT", child, "TOPLEFT", 2, -y)
+        hb:SetSize(colW * nCols - 4, HEADER_H)
+        hb:Show()
         y = y + HEADER_H
+        if collapsed then y = y + 4 else
         for si = 1, nCols do
             local list = Visible(self.views[si] and self.views[si][band.group.key])
             if list then
@@ -545,6 +627,7 @@ function ns:UpdateUI()
             end
         end
         y = y + band.count * ROW_H + 6
+        end
     end
     child:SetHeight(math.max(y, 10))
     for i, d in ipairs(dividers) do
@@ -567,9 +650,9 @@ function ns:UpdateUI()
     end
     local pend = ""
     if s.pending > 0 then
-        pend = format(self.pendingStalled and L[" · 게임에 없는 아이템 %d개 제외"] or L[" · 로딩 대기 %d"], s.pending)
+        pend = format(self.pendingStalled and L[" · 게임에 없는 %d개 제외"] or L[" · %d개 불러오는 중"], s.pending)
     end
-    status:SetText(format(L["요구 레벨 %d~%d%s · 후보 %d개%s · 점수는 스탯 가중치 기준 추정치"], lo, hi, isAuto and L["(자동)"] or "", s.candidates, pend))
+    status:SetText(format(L["요구 레벨 %d~%d%s · 확인된 아이템 %d개%s · 점수는 추정치"], lo, hi, isAuto and L["(자동)"] or "", s.ready, pend))
 end
 
 -- 언어를 바꾼 뒤 창을 새로 만든다 (/reload 불필요)
@@ -581,7 +664,7 @@ function ns:RebuildUI()
     for i = #UISpecialFrames, 1, -1 do
         if UISpecialFrames[i] == "BestGearFinderFrame" then table.remove(UISpecialFrames, i) end
     end
-    wipe(rows) wipe(headers) wipe(colHeaders) wipe(dividers) wipe(qualChk) wipe(menuChecks)
+    wipe(rows) wipe(headers) wipe(colHeaders) wipe(dividers) wipe(qualChk) wipe(menuChecks) wipe(hbtns)
     chanceEdit, aucChk, frame, ns.frame = nil, nil, nil, nil
     BuildFrame()
     if wasShown then frame:Show() end

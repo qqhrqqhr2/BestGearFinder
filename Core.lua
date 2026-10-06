@@ -3,7 +3,7 @@ local ADDON, ns = ...
 local L = ns.L
 _G.BestGearFinder = ns
 
-local DEFAULTS = { perSlot = 2, upgradeOnly = true, range = {}, qual = { [2] = true, [3] = true, [4] = true }, allModules = false, crafting = true, quests = true, minChance = 1, auction = true, newItems = true, iconShown = true, scan = {}, mobCut = true, classFilter = true, spec = {} }
+local DEFAULTS = { perSlot = 2, upgradeOnly = true, range = {}, qual = { [2] = true, [3] = true, [4] = true }, allModules = false, crafting = true, quests = true, minChance = 1, auction = true, newItems = true, iconShown = true, scan = {}, mobCut = true, classFilter = true, sourcedOnly = false, collapsed = {}, spec = {} }
 
 ns.index = {}          -- [itemID] = { loc, classID, subID, icon, minLvl, src = { {inst, boss}, ... } } | false
 ns.indexState = "idle" -- idle | running | done | empty
@@ -493,6 +493,16 @@ function ns:Compute()
                         if #picked >= perSlot then break end
                     end
                 end
+                if #picked > 1 then
+                    -- 출처가 확인된 아이템을 위로, 출처 불명(신규)은 아래로 (각 그룹 안에서는 점수순 유지)
+                    local known, unknown = {}, {}
+                    for _, pk in ipairs(picked) do
+                        local ps = ns:PrimarySource(pk.rec)
+                        if ps and ps.kind == "unknown" then unknown[#unknown + 1] = pk else known[#known + 1] = pk end
+                    end
+                    for _, pk in ipairs(unknown) do known[#known + 1] = pk end
+                    picked = known
+                end
                 if #picked > 0 then picks[g.key] = picked end
             end)
             if not okSlot then self.slotError = g.key .. ": " .. tostring(errSlot) end
@@ -533,6 +543,7 @@ end
 local function SrcAllowed(src)
     local k = src.kind
     if k == "craft" then return db.crafting and true or false end
+    if db.sourcedOnly and (k == "unknown" or (src.chance and src.chance < (db.minChance or 0))) then return false end
     if k == "unknown" then return db.newItems and true or false end
     if k == "quest" then return (db.quests and not QuestDone(src.qid)) and true or false end
     -- 드랍: 보스(확정 드랍 등)는 항상, 일반 몹의 극저확률 드랍은 최소 드랍률 미만이면 제외
