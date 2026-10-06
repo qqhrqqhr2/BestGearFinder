@@ -611,12 +611,11 @@ local function ScanLines(link)
     return lines
 end
 function ns:HasExternalSource()
-    return _G.AllTheThings ~= nil or _G.ATTC ~= nil
+    return _G.AllTheThings ~= nil or _G.ATTC ~= nil or _G.ATT ~= nil
 end
 function ns:ReadExternalSource(id, link)
     local c = ns.attSrc[id]
     if c ~= nil then return c or nil end
-    if not ns:HasExternalSource() then return nil end
     local lines = ScanLines(link or ("item:" .. id))
     local found = false
     for _, t in ipairs(lines or {}) do
