@@ -1,6 +1,7 @@
 # Changelog - Best Gear Finder
 
 ## 1.0.4
+- Ability-teaching relics (rune items with a use effect, e.g. druid idols) are no longer listed as gear.
 - Items that never load are given up on after 3 requests, so the "loading" count reaches zero and the list stops changing.
 
 ## 1.0.3

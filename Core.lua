@@ -379,6 +379,14 @@ local function IsJunkName(name)
         or name:find("^Monster") or name:find("^PH ") or false
 end
 
+-- 사용 효과로 '능력을 배우는' 성물(룬 아이템)은 장비가 아니므로 신규 아이템에서 제외
+local GetItemSpellC = (C_Item and C_Item.GetItemSpell) or GetItemSpell
+local function IsAbilityRelic(id, rec)
+    if not (rec.new and rec.loc == "INVTYPE_RELIC" and GetItemSpellC) then return false end
+    local ok, spell = pcall(GetItemSpellC, id)
+    return ok and spell ~= nil
+end
+
 local function Usable(rec, rules, armorType, dwOK)
     local loc, cID, sID = rec.loc, rec.classID, rec.subID
     if cID == ns.CLASS_WEAPON then
@@ -463,7 +471,7 @@ function ns:Compute()
                 if dead[id] then skipped = skipped + 1 else pending = pending + 1 end
             else
                 ready = ready + 1
-                if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and (reqLevel or 0) <= maxReq and (reqLevel or 0) >= minReq then
+                if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and not IsAbilityRelic(id, rec) and (reqLevel or 0) <= maxReq and (reqLevel or 0) >= minReq then
                     local entry = { id = id, link = link, ilvl = ilvl or 0, req = reqLevel or 0, rec = rec, quality = quality }
                     for _, g in ipairs(locToGroups[rec.loc]) do
                         table.insert(buckets[g.key], entry)
