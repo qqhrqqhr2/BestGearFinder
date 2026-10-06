@@ -17,6 +17,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **필터 ▼** 메뉴: 제작템, 퀘스트 보상, 월드 드랍(저확률), 업그레이드만, 몹 레벨 제한, 다른 직업 전용 숨김, 아이템 등급.
 - **슬롯 제목 클릭**: 그 슬롯을 접거나 펼칩니다. 창 오른쪽 아래 모서리를 끌면 높이를 조절할 수 있고 저장됩니다.
 - **아이템 클릭**: Shift+클릭은 채팅창에 아이템 링크 넣기, Ctrl+클릭은 착용 미리보기입니다.
+- **ATT 연동(선택)**: AllTheThings 애드온이 있으면, 출처 불명(신규) 아이템의 획득처를 그 애드온 툴팁에서 읽어와 `ATT: 던전 · 보스`로 표시하고 목록 위쪽에 올립니다.
 - **하단 상태줄**: 확인된 아이템 수를 보여줍니다. 게임에 없는 아이템은 "제외"로 표시되며, 마우스를 올리면 자세한 설명이 나옵니다.
 - 필터의 **출처가 확인된 것만**: 출처 불명(신규) 아이템과 저확률 월드 드랍을 숨깁니다. 신규 아이템은 항상 출처가 확인된 아이템 아래에 나옵니다.
 - **슬롯당 N개 ▼** 드롭다운: 슬롯마다 보여줄 아이템 수(2~10).
@@ -38,6 +39,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 | `/bgf 아이콘` | 화면 아이콘 숨기기/보이기 |
 | `/bgf 신규` | Forever 신규 아이템(출처 불명) 포함 켜기/끄기 |
 | `/bgf 재검색` | 신규 아이템을 처음부터 다시 검색 |
+| `/bgf att <아이템ID>` | 다른 애드온(ATT)이 툴팁에 넣는 획득처 줄을 확인(진단용) |
 | `/bgf 슬롯` | 슬롯별 후보 수·점수 진단 |
 | `/bgf 진단` | 상태 진단 |
 | `/bgf 초기화` | 창 위치 초기화 |
@@ -65,6 +67,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **Filters ▼** menu: crafting, quest rewards, world drops (low chance), upgrades only, mob level limit, hide other-class items, item quality.
 - **Click a slot title** to collapse / expand it. Drag the bottom-right corner to resize the height (saved).
 - **Click an item**: Shift+click inserts its link into chat, Ctrl+click opens the dressing-room preview.
+- **ATT integration (optional)**: if AllTheThings is installed, the source of [New] items is read from its tooltip and shown as `ATT: dungeon · boss`; those items are listed above unknown ones.
 - **Status line** (bottom): shows how many items were found. Items that do not exist in this game version are reported as skipped; hover for details.
 - Filter option **Known sources only** hides unknown-source [New] items and low-chance world drops. [New] items are always listed below items with known sources.
 - **Per slot: N ▼** dropdown: how many items to show per slot (2-10).
@@ -86,6 +89,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 | `/bgf icon` | Hide / show the on-screen icon |
 | `/bgf new` | Toggle new Forever items (source unknown) |
 | `/bgf rescan` | Search for new items again from scratch |
+| `/bgf att <itemID>` | Show the source lines other addons (ATT) add to the tooltip (diagnostics) |
 | `/bgf slot` | Per-slot candidate / score diagnostics |
 | `/bgf diag` | Status diagnostics |
 | `/bgf reset` | Reset window position |

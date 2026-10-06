@@ -620,8 +620,13 @@ function ns:UpdateUI()
                     if ps and ps.kind == "craft" then mark = mark .. L["|cff66ccff[제작]|r "] end
                     if ps and ps.kind == "quest" then mark = mark .. L["|cffffcc33[퀘스트]|r "] end
                     r.name:SetText(mark .. e.link)
+                    local srcText
+                    if ps and ps.kind == "unknown" then
+                        local ext = self:ReadExternalSource(e.id, e.link)
+                        if ext then srcText = "ATT: " .. ext end
+                    end
                     r.sub:SetText(format(L["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"], e.ilvl, e.req,
-                        self:ShortSource(e.rec)))
+                        srcText or self:ShortSource(e.rec)))
                     r:Show()
                 end
             end

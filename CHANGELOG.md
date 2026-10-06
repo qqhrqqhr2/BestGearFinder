@@ -7,6 +7,7 @@
 - Click a slot title to collapse / expand it.
 - Drag the bottom-right corner to resize the window height (saved).
 - Tooltips on the top buttons.
+- Optional AllTheThings integration: sources for [New] items are read from ATT tooltip lines when ATT is installed. `/bgf att <itemID>` dumps the tooltip lines for diagnostics.
 
 ## 1.0.2
 - Fixed the status line showing a wrong maximum required level.
