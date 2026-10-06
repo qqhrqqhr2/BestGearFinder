@@ -14,7 +14,7 @@ ns.stats = { candidates = 0, ready = 0, pending = 0 }
 
 local db
 local scoreCache = {}
-local requested, queue = {}, {}
+local requested, queue, queueLo = {}, {}, {}
 local attempts, dead = {}, {}  -- 요청 횟수 / 끝내 불러오지 못한(게임에 없는) 아이템
 local qdone = {}   -- 완료한 퀘스트 캐시 (계산할 때마다 초기화)
 
@@ -428,7 +428,7 @@ local function EquippedIlvl(group)
 end
 
 local IsCached = C_Item and C_Item.IsItemDataCachedByID
-local function Request(id)
+local function Request(id, prio)
     if dead[id] then return end
     local t = requested[id]
     if not t or GetTime() - t > 10 then
@@ -436,7 +436,8 @@ local function Request(id)
         if n >= 3 then dead[id] = true; return end   -- 3번 물어도 답이 없으면 포기
         attempts[id] = n + 1
         requested[id] = GetTime()
-        queue[#queue + 1] = id
+        local q = prio and queue or queueLo
+        q[#q + 1] = id
     end
 end
 
@@ -468,12 +469,12 @@ function ns:Compute()
             cand = cand + 1
             local name, link, quality, ilvl, reqLevel
             if IsCached and not IsCached(id) then
-                Request(id)
+                Request(id, not rec.minLvl or (rec.minLvl <= maxReq + 8 and rec.minLvl >= minReq - 8))
             else
                 name, link, quality, ilvl, reqLevel = GetItemInfoC(id)
             end
             if not name then
-                if not IsCached then Request(id) end
+                if not IsCached then Request(id, true) end
                 if dead[id] then skipped = skipped + 1 else pending = pending + 1 end
             else
                 ready = ready + 1
@@ -774,6 +775,7 @@ end
 function ns:ForceRefresh()
     wipe(requested)
     wipe(queue)
+    wipe(queueLo)
     wipe(attempts)
     wipe(dead)
     if self.indexState == "empty" then self:ResetIndex() end
@@ -803,10 +805,10 @@ driver:SetScript("OnUpdate", function(_, dt)
     end
     -- 아이템 정보 요청을 조금씩 나눠 보냄
     acc = acc + dt
-    if acc >= 0.2 and #queue > 0 then
+    if acc >= 0.1 and (#queue > 0 or #queueLo > 0) then
         acc = 0
-        for _ = 1, 20 do
-            local id = table.remove(queue)
+        for _ = 1, 30 do
+            local id = table.remove(queue) or table.remove(queueLo)
             if not id then break end
             if C_Item and C_Item.RequestLoadItemDataByID then
                 C_Item.RequestLoadItemDataByID(id)
