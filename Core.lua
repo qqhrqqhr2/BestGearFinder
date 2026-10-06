@@ -381,8 +381,23 @@ end
 
 -- 사용 효과로 '능력을 배우는' 성물(룬 아이템)은 장비가 아니므로 신규 아이템에서 제외
 local GetItemSpellC = (C_Item and C_Item.GetItemSpell) or GetItemSpell
+-- 툴팁에 '사용 효과' 줄이 있는지 (착용 효과와 구분). 알 수 없으면 nil
+local function HasUseLine(id)
+    if not (C_TooltipInfo and C_TooltipInfo.GetItemByID) then return nil end
+    local ok, data = pcall(C_TooltipInfo.GetItemByID, id)
+    if not ok or type(data) ~= "table" or type(data.lines) ~= "table" then return nil end
+    local prefix = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
+    for _, ln in ipairs(data.lines) do
+        local t = ln.leftText
+        if type(t) == "string" and t:sub(1, #prefix) == prefix then return true end
+    end
+    return false
+end
 local function IsAbilityRelic(id, rec)
-    if not (rec.new and rec.loc == "INVTYPE_RELIC" and GetItemSpellC) then return false end
+    if not (rec.new and rec.loc == "INVTYPE_RELIC") then return false end
+    local u = HasUseLine(id)
+    if u ~= nil then return u end
+    if not GetItemSpellC then return false end
     local ok, spell = pcall(GetItemSpellC, id)
     return ok and spell ~= nil
 end
@@ -870,6 +885,22 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         end
         Print(L["신규 아이템(출처 불명): "] .. tostring(ns.indexStats.new or 0))
         Print(L["CMaNGOS 데이터: 아이템="] .. sourceItems .. L[", 출처="] .. sourceCount .. L[", 버전="] .. tostring(d.version or "?"))
+    elseif msg:match("^why%s+%d+$") or msg:match("^왜%s+%d+$") then
+        local id = tonumber(msg:match("%d+"))
+        local rec = ns.index and ns.index[id]
+        local function P(t) Print("[why " .. id .. "] " .. t) end
+        if not rec then P("not in index (not equippable, or not in data)"); return end
+        local _, class = UnitClass("player")
+        local rules = ns.CLASS_RULES[class]
+        local level = UnitLevel("player")
+        local dw = rules.dualWield and level >= (ns.DUAL_WIELD_LEVEL[class] or 99) or false
+        local minReq, maxReq = ns:GetRange()
+        P(("loc=%s class=%s sub=%s new=%s"):format(tostring(rec.loc), tostring(rec.classID), tostring(rec.subID), tostring(rec.new)))
+        P("sourceAllowed=" .. tostring(ns:SourceAllowed(rec)) .. " usable=" .. tostring(Usable(rec, rules, GetArmorType(rules, level), dw)))
+        local name, _, quality, ilvl, req = GetItemInfoC(id)
+        P(("name=%s quality=%s ilvl=%s req=%s effReq=%s range=%d-%d"):format(tostring(name), tostring(quality), tostring(ilvl), tostring(req), tostring(name and EffReq(req, ilvl)), minReq, maxReq))
+        P("qualityAllowed=" .. tostring(quality and db.qual[quality]) .. " junkName=" .. tostring(name and IsJunkName(name) and true or false))
+        P(("abilityRelic=%s useLine=%s itemSpell=%s"):format(tostring(IsAbilityRelic(id, rec)), tostring(HasUseLine(id)), tostring(GetItemSpellC and select(1, GetItemSpellC(id)))))
     elseif msg == "reset" or msg == "초기화" then
         db.point = nil
         if ns.frame then ns.frame:ClearAllPoints() ns.frame:SetPoint("CENTER") end
