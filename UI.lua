@@ -456,8 +456,8 @@ local function BuildFrame()
         GameTooltip:AddLine(L["아이템 현황"], 1, 1, 1)
         GameTooltip:AddLine(format(L["조건에 맞는 후보: %d개"], st.candidates), 0.8, 0.8, 0.8)
         GameTooltip:AddLine(format(L["게임에서 확인된 아이템: %d개"], st.ready), 0.6, 0.9, 0.6)
-        if st.pending > 0 then
-            GameTooltip:AddLine(format(L["확인되지 않은 아이템: %d개 (게임에 없는 아이템이면 계속 확인되지 않습니다)"], st.pending), 1, 0.82, 0, true)
+        if st.pending + (st.skipped or 0) > 0 then
+            GameTooltip:AddLine(format(L["확인되지 않은 아이템: %d개 (게임에 없는 아이템이면 계속 확인되지 않습니다)"], st.pending + (st.skipped or 0)), 1, 0.82, 0, true)
         end
         GameTooltip:AddLine(L["점수는 직업·역할별 스탯 가중치로 계산한 추정치입니다."], 0.7, 0.7, 0.7, true)
         GameTooltip:Show()
@@ -651,7 +651,9 @@ function ns:UpdateUI()
     end
     local pend = ""
     if s.pending > 0 then
-        pend = format(self.pendingStalled and L[" · 게임에 없는 %d개 제외"] or L[" · %d개 불러오는 중"], s.pending)
+        pend = format(L[" · %d개 불러오는 중"], s.pending)
+    elseif (s.skipped or 0) > 0 then
+        pend = format(L[" · 게임에 없는 %d개 제외"], s.skipped)
     end
     status:SetText(format(L["요구 레벨 %d~%d%s · 확인된 아이템 %d개%s · 점수는 추정치"], lo, hi, isAuto and L["(자동)"] or "", s.ready, pend))
 end

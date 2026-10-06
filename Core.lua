@@ -15,6 +15,7 @@ ns.stats = { candidates = 0, ready = 0, pending = 0 }
 local db
 local scoreCache = {}
 local requested, queue = {}, {}
+local attempts, dead = {}, {}  -- 요청 횟수 / 끝내 불러오지 못한(게임에 없는) 아이템
 local qdone = {}   -- 완료한 퀘스트 캐시 (계산할 때마다 초기화)
 
 ------------------------------------------------------------------------
@@ -420,8 +421,12 @@ end
 
 local IsCached = C_Item and C_Item.IsItemDataCachedByID
 local function Request(id)
+    if dead[id] then return end
     local t = requested[id]
-    if not t or GetTime() - t > 15 then
+    if not t or GetTime() - t > 10 then
+        local n = attempts[id] or 0
+        if n >= 3 then dead[id] = true; return end   -- 3번 물어도 답이 없으면 포기
+        attempts[id] = n + 1
         requested[id] = GetTime()
         queue[#queue + 1] = id
     end
@@ -441,7 +446,7 @@ function ns:Compute()
     -- 1) 후보 수집 (역할과 무관한 공통 단계)
     local buckets = {}
     for _, g in ipairs(ns.GROUPS) do buckets[g.key] = {} end
-    local cand, ready, pending = 0, 0, 0
+    local cand, ready, pending, skipped = 0, 0, 0, 0
     local errCount, firstErr = 0, nil
     local function handle(id, rec)
         if rec and ns:SourceAllowed(rec) and Usable(rec, rules, armorType, dwOK)
@@ -454,8 +459,8 @@ function ns:Compute()
                 name, link, quality, ilvl, reqLevel = GetItemInfoC(id)
             end
             if not name then
-                pending = pending + 1
                 if not IsCached then Request(id) end
+                if dead[id] then skipped = skipped + 1 else pending = pending + 1 end
             else
                 ready = ready + 1
                 if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and (reqLevel or 0) <= maxReq and (reqLevel or 0) >= minReq then
@@ -561,6 +566,7 @@ function ns:Compute()
 
     self.views, self.bands = views, bands
     self.stats.candidates, self.stats.ready, self.stats.pending = cand, ready, pending
+    self.stats.skipped = skipped
     return pending
 end
 
@@ -754,6 +760,8 @@ end
 function ns:ForceRefresh()
     wipe(requested)
     wipe(queue)
+    wipe(attempts)
+    wipe(dead)
     if self.indexState == "empty" then self:ResetIndex() end
     self:Refresh(true)
 end
@@ -804,11 +812,12 @@ ev:RegisterEvent("PLAYER_REGEN_ENABLED")
 -- 클라이언트에 없는 이벤트일 수 있으므로 보호해서 등록
 pcall(ev.RegisterEvent, ev, "QUEST_TURNED_IN")
 pcall(ev.RegisterEvent, ev, "QUEST_DATA_LOAD_RESULT")
-ev:SetScript("OnEvent", function(_, event, arg1)
+ev:SetScript("OnEvent", function(_, event, arg1, arg2)
     if event == "ADDON_LOADED" then
         if arg1 == ADDON then InitDB() end
     elseif event == "GET_ITEM_INFO_RECEIVED" then
-        if ns.frame and ns.frame:IsShown() and ns.stats.pending > 0 then ns:ScheduleRefresh(0.4) end
+        if arg2 == false and requested[arg1] then dead[arg1] = true end   -- 서버가 '없음'이라고 답한 아이템
+        if ns.frame and ns.frame:IsShown() and ns.stats.pending > 0 then ns:ScheduleRefresh(1.5) end
     elseif event == "QUEST_TURNED_IN" then
         ns:ScheduleRefresh(0.8)
     elseif event == "QUEST_DATA_LOAD_RESULT" then
