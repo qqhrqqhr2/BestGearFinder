@@ -7,7 +7,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 ## 한국어 매뉴얼
 
 ### 설치
-1. CurseForge/Wago에서 받은 `BestGearFinder-<버전>.zip` 압축을 풉니다.
+1. CurseForge에서 받은 `BestGearFinder-<버전>.zip` 압축을 풉니다.
 2. `BestGearFinder` 폴더를 `World of Warcraft\<버전 폴더>\Interface\AddOns\` 에 넣습니다. (`AddOns\BestGearFinder\BestGearFinder.toc` 가 되어야 합니다.)
 3. 게임을 켜고 `/bgf` 를 입력합니다. 처음 열 때 데이터를 읽느라 몇 초 걸립니다.
 
@@ -55,7 +55,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 ## English manual
 
 ### Install
-1. Unzip the `BestGearFinder-<version>.zip` you downloaded from CurseForge / Wago.
+1. Unzip the `BestGearFinder-<version>.zip` you downloaded from CurseForge.
 2. Put the `BestGearFinder` folder in `World of Warcraft\<version folder>\Interface\AddOns\` (result: `AddOns\BestGearFinder\BestGearFinder.toc`).
 3. Type `/bgf` in game. The first open takes a few seconds while the data is indexed.
 
@@ -104,12 +104,12 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
     python tools/extract_cmnangos.py "ClassicDB_1_12_1_z2815.sql.gz" --output "BestGearFinder/GearDatabase.lua"
 (`--min-quality 2`, `--world-rares` optional.) Source: https://github.com/cmangos/classic-db (GPL-3.0)
 
-## Releasing (CurseForge / Wago)
+## Releasing (CurseForge)
 Releases are automated with GitHub Actions + the BigWigs packager.
 1. Commit changes to `main` and test in game.
 2. On GitHub: Releases → Draft a new release → create a tag such as `v1.0.1` (use `-beta` in the tag for a beta) → Publish.
-3. The workflow packages the addon and uploads it to CurseForge (`X-Curse-Project-ID`) and Wago (`X-Wago-ID`).
-Secrets required: `CF_API_KEY`, `WAGO_API_TOKEN`.
+3. The workflow packages the addon and uploads it to CurseForge (`X-Curse-Project-ID`).
+Secret required: `CF_API_KEY`.
 
 Support: https://buymeacoffee.com/qqhrqqhr2
 
