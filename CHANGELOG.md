@@ -1,5 +1,8 @@
 # Changelog - Best Gear Finder
 
+## 1.0.4
+- Items that never load are given up on after 3 requests, so the "loading" count reaches zero and the list stops changing.
+
 ## 1.0.3
 - Status line reworded: shows the number of items found in the game; items that never load are reported as "not in this game skipped". Hover the status line for details.
 - New filter option "Known sources only" (hides unknown-source [New] items and low-chance world drops).
@@ -8,7 +11,6 @@
 - Click a slot title to collapse / expand it.
 - Drag the bottom-right corner to resize the window height (saved).
 - Tooltips on the top buttons.
-- Items that never load are given up on after 3 requests, so the "loading" count reaches zero and the list stops changing.
 
 ## 1.0.2
 - Fixed the status line showing a wrong maximum required level.
