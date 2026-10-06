@@ -412,6 +412,9 @@ local function Usable(rec, rules, armorType, dwOK)
         if ns.ARMOR_LOCS[loc] then return sID == armorType end
         if loc == "INVTYPE_SHIELD" then return rules.shield and sID == 6 end
         if loc == "INVTYPE_RELIC" then return rules.relic == sID end
+        if loc == "INVTYPE_RANGED" or loc == "INVTYPE_RANGEDRIGHT" or loc == "INVTYPE_THROWN" then return false end
+    elseif cID ~= nil then
+        return false   -- 무기/방어구가 아닌 분류(장난감 등)는 장비가 아님
     end
     return true
 end
