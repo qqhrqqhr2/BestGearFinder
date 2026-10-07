@@ -7,7 +7,15 @@ local W, H = 700, 780
 local ROW_H, MAX_ROWS = 22, 150
 local win, listChild, countText, noteText, nameBox, minBox, maxBox, mineChk
 local rows = {}
-local filter = { text = "", noReq = false, q = {}, slot = {}, kind = {}, src = {}, mine = false }
+local filter = { text = "", noReq = true, q = {}, slot = {}, kind = {}, src = {}, mine = false }
+-- 기본값: 고급·희귀, 획득처 전체, 레벨 제한 없음 포함
+local function ApplyDefaults()
+    filter.text, filter.mine, filter.noReq = "", false, true
+    for _, set in ipairs({ filter.q, filter.slot, filter.kind, filter.src }) do wipe(set) end
+    filter.q[2], filter.q[3] = true, true
+    for _, k in ipairs({ "drop", "quest", "craft", "vendor", "unknown" }) do filter.src[k] = true end
+end
+ApplyDefaults()
 local timer, polling = nil, false
 local token = 0
 local running = false
@@ -313,6 +321,7 @@ local function Build()
     local nrl = noReqChk:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     nrl:SetPoint("LEFT", noReqChk, "RIGHT", 0, 0)
     nrl:SetText(L["레벨 제한 없음 포함"])
+    noReqChk:SetChecked(filter.noReq)
     noReqChk:SetScript("OnClick", function(self) filter.noReq = self:GetChecked() and true or false end)
 
     -- 체크박스 묶음 (아무것도 안 고르면 전체)
@@ -335,6 +344,7 @@ local function Build()
             cb.label:SetJustifyH("LEFT")
             cb.label:SetWordWrap(false)
             cb.label:SetText(e.label)
+            cb:SetChecked(set[e.key] and true or false)
             cb:SetScript("OnClick", function(self) set[e.key] = self:GetChecked() and true or nil end)
             checkLists[#checkLists + 1] = { cb = cb, set = set, key = e.key }
         end
@@ -383,10 +393,9 @@ local function Build()
     reset:SetText(L["초기화"])
     reset:SetScript("OnClick", function()
         StopSearch()
-        filter.text, filter.mine, filter.noReq = "", false, false
-        for _, set in ipairs({ filter.q, filter.slot, filter.kind, filter.src }) do wipe(set) end
-        nameBox:SetText(""); ns.SearchDefaultRange(); mineChk:SetChecked(false); noReqChk:SetChecked(false)
-        for _, c in ipairs(checkLists) do c.cb:SetChecked(false) end
+        ApplyDefaults()
+        nameBox:SetText(""); ns.SearchDefaultRange(); mineChk:SetChecked(false); noReqChk:SetChecked(true)
+        for _, c in ipairs(checkLists) do c.cb:SetChecked(c.set[c.key] and true or false) end
     end)
     y = y - 34
 
