@@ -38,8 +38,21 @@ local FALLBACK = {
     ["2:16"] = "투척 무기", ["2:18"] = "석궁", ["2:19"] = "마법봉", ["2:14"] = "기타 무기", ["2:20"] = "낚싯대",
 }
 
+local EN_KIND = {
+    ["4:1"] = "Cloth", ["4:2"] = "Leather", ["4:3"] = "Mail", ["4:4"] = "Plate", ["4:6"] = "Shields",
+    ["4:7"] = "Librams", ["4:8"] = "Idols", ["4:9"] = "Totems",
+    ["2:0"] = "One-Handed Axes", ["2:1"] = "Two-Handed Axes", ["2:2"] = "Bows", ["2:3"] = "Guns",
+    ["2:4"] = "One-Handed Maces", ["2:5"] = "Two-Handed Maces", ["2:6"] = "Polearms", ["2:7"] = "One-Handed Swords",
+    ["2:8"] = "Two-Handed Swords", ["2:10"] = "Staves", ["2:13"] = "Fist Weapons", ["2:14"] = "Miscellaneous",
+    ["2:15"] = "Daggers", ["2:16"] = "Thrown", ["2:18"] = "Crossbows", ["2:19"] = "Wands", ["2:20"] = "Fishing Poles",
+}
+local EN_QUALITY = { "Common", "Uncommon", "Rare", "Epic", "Legendary" }
+-- 현재 표시 언어가 영어인지 (게임 클라이언트가 한국어여도 애드온 언어 설정을 따른다)
+local function IsEnglish() return L["요구 레벨"] ~= "요구 레벨" end
+
 local function KindName(cID, sID)
     local key = cID .. ":" .. sID
+    if IsEnglish() and EN_KIND[key] then return EN_KIND[key] end
     if cID == 4 and sID == 0 then return L["장신구/목걸이/반지/기타"] end
     local fn = GetItemSubClassInfo or (C_Item and C_Item.GetItemSubClassInfo)
     if fn then
@@ -50,7 +63,7 @@ local function KindName(cID, sID)
 end
 
 local function QualityName(q)
-    local n = _G["ITEM_QUALITY" .. q .. "_DESC"]
+    local n = IsEnglish() and EN_QUALITY[q] or _G["ITEM_QUALITY" .. q .. "_DESC"]
     local col = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
     if type(n) ~= "string" then n = tostring(q) end
     if col and type(col.hex) == "string" then return col.hex .. n .. "|r" end
@@ -339,6 +352,13 @@ local function Build()
         insets = { left = 11, right = 12, top = 12, bottom = 11 },
     })
     if ns.SolidBG then ns.SolidBG(win) end
+    local function ApplyAlpha(a)
+        a = math.max(0.3, math.min(1, a or 0.85))
+        if win.solidBG then win.solidBG:SetAlpha(a) end
+        if win.SetBackdropColor then win:SetBackdropColor(1, 1, 1, a) end
+        if win.SetBackdropBorderColor then win:SetBackdropBorderColor(1, 1, 1, math.min(1, a + 0.2)) end
+    end
+    ApplyAlpha(ns.db and ns.db.searchAlpha or 0.85)
     win:SetScript("OnDragStart", function(self) self:StartMoving() end)
     win:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
     win:Hide()
@@ -349,6 +369,24 @@ local function Build()
     title:SetText(L["아이템 검색"])
     local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", -6, -6)
+
+    -- 투명도 슬라이더
+    local sl = CreateFrame("Slider", "BestGearFinderSearchAlpha", win, "OptionsSliderTemplate")
+    sl:SetPoint("TOPRIGHT", -70, -26)
+    sl:SetSize(110, 14)
+    sl:SetMinMaxValues(0.3, 1)
+    sl:SetValueStep(0.05)
+    if sl.SetObeyStepOnDrag then sl:SetObeyStepOnDrag(true) end
+    local slText = _G["BestGearFinderSearchAlphaText"]
+    if slText then slText:SetText(L["투명도"]); slText:ClearAllPoints(); slText:SetPoint("RIGHT", sl, "LEFT", -6, 0) end
+    local slLow, slHigh = _G["BestGearFinderSearchAlphaLow"], _G["BestGearFinderSearchAlphaHigh"]
+    if slLow then slLow:SetText("") end
+    if slHigh then slHigh:SetText("") end
+    sl:SetValue(ns.db and ns.db.searchAlpha or 0.85)
+    sl:SetScript("OnValueChanged", function(_, v)
+        if ns.db then ns.db.searchAlpha = v end
+        ApplyAlpha(v)
+    end)
 
     -- 이름 입력
     local nl = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
