@@ -11,6 +11,7 @@ local filter = { text = "", q = {}, slot = {}, kind = {}, src = {}, mine = false
 local timer, polling = nil, false
 local token = 0
 local running = false
+local lastPending, stall = -1, 0
 local searchBtn, qualChecks = nil, {}
 
 local ARMOR_KINDS = { { 4, 1 }, { 4, 2 }, { 4, 3 }, { 4, 4 }, { 4, 6 }, { 4, 0 }, { 4, 7 }, { 4, 8 }, { 4, 9 } }
@@ -208,15 +209,20 @@ function Run()
         countText:SetText(format(L["%d개"], total))
     end
     noteText:SetText(pending > 0 and format(L["%d개 불러오는 중..."], pending) or (total == 0 and L["검색 결과가 없습니다."] or ""))
-    if pending > 0 then
-        Schedule(1.2)          -- 아이템 정보가 더 도착하면 갱신 (중지를 누를 때까지)
+    -- 대기 개수가 몇 번 연속으로 안 줄면(서버가 답하지 않는 아이템) 기다리지 않고 끝낸다
+    if pending > 0 and pending == lastPending then stall = stall + 1 else stall = 0 end
+    lastPending = pending
+    if pending > 0 and stall < 3 then
+        Schedule(1.0)          -- 아이템 정보가 더 도착하면 갱신 (중지를 누를 때까지)
     else
+        if pending > 0 then noteText:SetText(format(L["%d개는 불러오지 못해 제외했습니다"], pending)) end
         SetRunning(false)      -- 끝
     end
 end
 
 local function StartSearch()
     if not win then return end
+    lastPending, stall = -1, 0
     SetRunning(true)
     Schedule(0.01)
 end

@@ -56,6 +56,7 @@ local en = {
     ["방어구"] = "Armor",
     ["무기"] = "Weapon",
     ["중지"] = "Stop",
+    ["%d개는 불러오지 못해 제외했습니다"] = "%d items could not be loaded and were skipped",
     ["중지됨"] = "Stopped",
     ["이름, 등급, 요구 레벨, 부위, 방어구/무기 종류, 획득처로 전체 아이템을 검색하는 창을 엽니다."] = "Opens a window to search all items by name, quality, required level, slot, armor/weapon type and source.",
     ["이름/보스"] = "Name / boss",
