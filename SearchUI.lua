@@ -127,27 +127,28 @@ local function BuildTree()
     for _, k in ipairs(WEAPON_KINDS) do
         weapon.children[#weapon.children + 1] = { label = KindName(k[1], k[2]), c = k[1], s = k[2] }
     end
-    local armor = { label = L["방어구"], c = 4, children = {} }
+    local armor = { label = L["방어구"], c = 4, ss = { [1] = true, [2] = true, [3] = true, [4] = true }, children = {} }
     local slotKeys = { "HEAD", "SHOULDER", "CLOAK", "CHEST", "WRIST", "HAND", "WAIST", "LEGS", "FEET" }
     for _, sid in ipairs({ 1, 2, 3, 4 }) do
         local n = { label = KindName(4, sid), c = 4, s = sid, children = {} }
         for _, key in ipairs(slotKeys) do n.children[#n.children + 1] = WithBase(GroupNode(key), 4, sid) end
         armor.children[#armor.children + 1] = n
     end
-    local misc = { label = L["기타 (목걸이/반지/장신구)"], c = 4, s = 0, children = {} }
-    for _, key in ipairs({ "NECK", "FINGER", "TRINKET" }) do misc.children[#misc.children + 1] = WithBase(GroupNode(key), 4, 0) end
-    misc.children[#misc.children + 1] = { label = L["보조 장비"], c = 4, s = 0, locs = { INVTYPE_HOLDABLE = true } }
-    armor.children[#armor.children + 1] = misc
-    armor.children[#armor.children + 1] = { label = KindName(4, 6), c = 4, s = 6 }
+    local top = { weapon, armor, { label = KindName(4, 6), c = 4, s = 6 } }
     for _, sid in ipairs({ 7, 8, 9 }) do
-        armor.children[#armor.children + 1] = { label = KindName(4, sid), c = 4, s = sid }
+        top[#top + 1] = { label = KindName(4, sid), c = 4, s = sid }
     end
-    return { weapon, armor }
+    for _, key in ipairs({ "NECK", "FINGER", "TRINKET" }) do
+        top[#top + 1] = WithBase(GroupNode(key), 4, 0)
+    end
+    top[#top + 1] = { label = L["보조 장비"], c = 4, s = 0, locs = { INVTYPE_HOLDABLE = true } }
+    return top
 end
 
 CatMatch = function(node, rec)
     if node.c and rec.classID ~= node.c then return false end
     if node.s and rec.subID ~= node.s then return false end
+    if node.ss and not node.ss[rec.subID] then return false end
     if node.locs and not node.locs[rec.loc] then return false end
     return true
 end
