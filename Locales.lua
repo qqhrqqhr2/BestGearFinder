@@ -57,6 +57,7 @@ local en = {
     ["기타 (목걸이/반지/장신구)"] = "Misc (neck / ring / trinket)",
     ["무기"] = "Weapon",
     ["중지"] = "Stop",
+    ["선택 입력 · 비워 두면 전체"] = "Optional - leave empty for all",
     ["레벨 제한 없음 포함"] = "Include no level req",
     ["%d개는 불러오지 못해 제외했습니다"] = "%d items could not be loaded and were skipped",
     ["중지됨"] = "Stopped",

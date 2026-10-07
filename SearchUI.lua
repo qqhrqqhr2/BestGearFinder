@@ -335,9 +335,20 @@ local function Build()
     nameBox:SetMaxLetters(40)
     nameBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
     nameBox:SetScript("OnEnterPressed", function(self) self:ClearFocus(); StartSearch() end)
+    -- 옅은 안내 문구: 비워 두면 이름과 상관없이 전체 (선택 입력)
+    local nameHint = nameBox:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    nameHint:SetPoint("LEFT", nameBox, "LEFT", 4, 0)
+    nameHint:SetText(L["선택 입력 · 비워 두면 전체"])
+    local function UpdateHint()
+        local empty = (nameBox:GetText() or "") == ""
+        nameHint:SetShown(empty and not nameBox:HasFocus())
+    end
     nameBox:SetScript("OnTextChanged", function(self)
         filter.text = string.lower((self:GetText() or ""):match("^%s*(.-)%s*$"))
+        UpdateHint()
     end)
+    nameBox:SetScript("OnEditFocusGained", function() nameHint:Hide() end)
+    nameBox:SetScript("OnEditFocusLost", UpdateHint)
 
     -- 요구 레벨 범위
     local ll = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
