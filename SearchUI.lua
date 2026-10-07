@@ -134,11 +134,12 @@ local function BuildTree()
         for _, key in ipairs(slotKeys) do n.children[#n.children + 1] = WithBase(GroupNode(key), 4, sid) end
         armor.children[#armor.children + 1] = n
     end
+    armor.children[#armor.children + 1] = WithBase(GroupNode("CLOAK"), 4, nil)   -- 등: 방어구 바로 아래
     local top = { weapon, armor, { label = KindName(4, 6), c = 4, s = 6 } }
     for _, sid in ipairs({ 7, 8, 9 }) do
         top[#top + 1] = { label = KindName(4, sid), c = 4, s = sid }
     end
-    for _, key in ipairs({ "CLOAK", "NECK", "FINGER", "TRINKET" }) do
+    for _, key in ipairs({ "NECK", "FINGER", "TRINKET" }) do
         top[#top + 1] = WithBase(GroupNode(key), 4, nil)   -- 부위(loc)만 보고 방어구 하위 종류는 따지지 않음
     end
     top[#top + 1] = { label = L["보조 장비"], c = 4, locs = { INVTYPE_HOLDABLE = true } }
