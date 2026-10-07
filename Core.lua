@@ -636,7 +636,7 @@ function ns:Compute()
             else
                 ready = ready + 1
                 if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and not IsAbilityRelic(id, rec) and InRange(reqLevel, minReq, maxReq, ilvl, ns:IsAnyBis(id)) then
-                    local entry = { id = id, link = link, ilvl = ilvl or 0, req = reqLevel or 0, rec = rec, quality = quality }
+                    local entry = { id = id, name = name, link = link, ilvl = ilvl or 0, req = reqLevel or 0, rec = rec, quality = quality }
                     for _, g in ipairs(locToGroups[rec.loc]) do
                         table.insert(buckets[g.key], entry)
                     end
@@ -700,17 +700,28 @@ function ns:Compute()
                     local wid = GetInventoryItemID and GetInventoryItemID("player", invSlot)
                     if wid then worn[wid] = true end
                 end
+                local q = ns.searchText
+                if q == "" then q = nil end
+                local function Match(e)
+                    if string.find(string.lower(e.name or ""), q, 1, true) then return true end
+                    for _, s in ipairs(e.rec.src) do
+                        if string.find(string.lower((s.boss or "") .. " " .. (s.inst or "")), q, 1, true) then return true end
+                    end
+                    return false
+                end
                 for _, w in ipairs(list) do
                     local isUpgrade = w.score > base * (1 + ns.UPGRADE_MARGIN_PCT) + ns.UPGRADE_MARGIN_ABS
                     -- BiS 1순위는 점수와 무관하게 아직 착용하지 않았다면 항상 표시
                     if w.bis == 2 and not worn[w.e.id] then isUpgrade = true end
-                    if (not db.upgradeOnly or isUpgrade) and not (w.bis == 2 and worn[w.e.id]) then
+                    if q and not Match(w.e) then
+                        -- 검색어와 맞지 않는 아이템은 제외
+                    elseif (q or not db.upgradeOnly or isUpgrade) and (q or not (w.bis == 2 and worn[w.e.id])) then
                         local e = w.e
                         if not db.classFilter or IsClassAllowed(e.id) ~= false then
                             picked[#picked + 1] = { id = e.id, link = e.link, ilvl = e.ilvl, req = e.req, rec = e.rec,
                                 quality = e.quality, score = w.score, upgrade = isUpgrade, baseIlvl = baseIlvl, baseScore = base,
                                 bis = w.bis, baseLink = baseLink, weights = weights }
-                            if #picked >= perSlot then break end
+                            if #picked >= (q and 30 or perSlot) then break end
                         end
                     end
                 end
@@ -780,6 +791,7 @@ local function SrcAllowed(src)
     return true
 end
 ns.SrcAllowed = SrcAllowed
+ns.searchText = ""
 
 function ns:SourceAllowed(rec)
     for _, s in ipairs(rec.src) do

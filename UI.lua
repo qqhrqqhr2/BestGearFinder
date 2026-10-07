@@ -421,6 +421,29 @@ local function BuildFrame()
     end)
     autoBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
+    -- 아이템 검색 (이름 / 보스 / 던전)
+    local sBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
+    sBox:SetSize(150, 20)
+    sBox:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -46, -64)
+    sBox:SetAutoFocus(false)
+    sBox:SetMaxLetters(40)
+    sBox:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
+    sBox:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    local sHint = sBox:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    sHint:SetPoint("LEFT", sBox, "LEFT", 2, 0)
+    sHint:SetText(L["아이템/보스 검색"])
+    local sTimer
+    sBox:SetScript("OnTextChanged", function(self)
+        local t = strtrim(self:GetText() or ""):lower()
+        sHint:SetShown(t == "" and not self:HasFocus())
+        if t == ns.searchText then return end
+        ns.searchText = t
+        if sTimer then sTimer:Cancel() end
+        sTimer = C_Timer.NewTimer(0.3, function() ns:Refresh() end)
+    end)
+    sBox:SetScript("OnEditFocusGained", function() sHint:Hide() end)
+    sBox:SetScript("OnEditFocusLost", function(self) sHint:SetShown((self:GetText() or "") == "") end)
+
     -- 역할 칸 머리글 (스크롤 밖에 고정)
     for i, spec in ipairs(specs) do
         local fs = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -586,7 +609,7 @@ function ns:UpdateUI()
 
     HideAll()
     local function Visible(list)
-        if not list or not self.db.upgradeOnly then return list end
+        if not list or not self.db.upgradeOnly or (ns.searchText or "") ~= "" then return list end
         local out = {}
         for _, e in ipairs(list) do if e.upgrade then out[#out + 1] = e end end
         return #out > 0 and out or nil

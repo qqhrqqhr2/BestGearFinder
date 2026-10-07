@@ -53,6 +53,7 @@ local en = {
     ["가죽세공"] = "Leatherworking",
     ["개"] = "",
     ["검색"] = "Search",
+    ["아이템/보스 검색"] = "Search item / boss",
     ["검색 / 새로고침"] = "Search / Refresh",
     ["검은날개 둥지"] = "Blackwing Lair",
     ["검은바위 나락"] = "Blackrock Depths",
