@@ -7,12 +7,12 @@ local W, H = 700, 780
 local ROW_H, MAX_ROWS = 22, 150
 local win, listChild, countText, noteText, nameBox, minBox, maxBox, mineChk
 local rows = {}
-local filter = { text = "", q = {}, slot = {}, kind = {}, src = {}, mine = false }
+local filter = { text = "", noReq = false, q = {}, slot = {}, kind = {}, src = {}, mine = false }
 local timer, polling = nil, false
 local token = 0
 local running = false
 local lastPending, stall = -1, 0
-local searchBtn, qualChecks = nil, {}
+local searchBtn, qualChecks, noReqChk = nil, {}, nil
 
 local ARMOR_KINDS = { { 4, 1 }, { 4, 2 }, { 4, 3 }, { 4, 4 }, { 4, 6 }, { 4, 0 }, { 4, 7 }, { 4, 8 }, { 4, 9 } }
 local WEAPON_KINDS = { { 2, 0 }, { 2, 1 }, { 2, 4 }, { 2, 5 }, { 2, 7 }, { 2, 8 }, { 2, 15 }, { 2, 13 }, { 2, 6 }, { 2, 10 },
@@ -165,8 +165,10 @@ function Run()
                 else
                     local good = true
                     if HasQuality() and not filter.q[quality or 0] then good = false end
-                    if good and minL and (req or 0) < minL then good = false end
-                    if good and maxL and (req or 0) > maxL then good = false end
+                    if good and not (filter.noReq and (req or 0) == 0) then
+                        if minL and (req or 0) < minL then good = false end
+                        if good and maxL and (req or 0) > maxL then good = false end
+                    end
                     if good and text ~= "" then
                         local hit = string.find(string.lower(name), text, 1, true)
                         if not hit then
@@ -305,6 +307,13 @@ local function Build()
     tl:SetPoint("LEFT", minBox, "RIGHT", 4, 0)
     tl:SetText("~")
     maxBox = LevelEdit(tl, 8)
+    noReqChk = CreateFrame("CheckButton", nil, win, "UICheckButtonTemplate")
+    noReqChk:SetSize(22, 22)
+    noReqChk:SetPoint("LEFT", maxBox, "RIGHT", 6, 0)
+    local nrl = noReqChk:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    nrl:SetPoint("LEFT", noReqChk, "RIGHT", 0, 0)
+    nrl:SetText(L["레벨 제한 없음 포함"])
+    noReqChk:SetScript("OnClick", function(self) filter.noReq = self:GetChecked() and true or false end)
 
     -- 체크박스 묶음 (아무것도 안 고르면 전체)
     local checkLists = {}
@@ -374,9 +383,9 @@ local function Build()
     reset:SetText(L["초기화"])
     reset:SetScript("OnClick", function()
         StopSearch()
-        filter.text, filter.mine = "", false
+        filter.text, filter.mine, filter.noReq = "", false, false
         for _, set in ipairs({ filter.q, filter.slot, filter.kind, filter.src }) do wipe(set) end
-        nameBox:SetText(""); ns.SearchDefaultRange(); mineChk:SetChecked(false)
+        nameBox:SetText(""); ns.SearchDefaultRange(); mineChk:SetChecked(false); noReqChk:SetChecked(false)
         for _, c in ipairs(checkLists) do c.cb:SetChecked(false) end
     end)
     y = y - 34
