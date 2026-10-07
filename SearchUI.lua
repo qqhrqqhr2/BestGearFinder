@@ -3,12 +3,11 @@
 local ADDON, ns = ...
 local L = ns.L
 
-local W, H = 640, 560
+local W, H = 700, 780
 local ROW_H, MAX_ROWS = 22, 150
 local win, listChild, countText, noteText, nameBox, minBox, maxBox, mineChk
 local rows = {}
-local filter = { text = "", q = {}, slot = nil, kind = nil, src = nil, mine = false }
-local dropdowns = {}
+local filter = { text = "", q = {}, slot = {}, kind = {}, src = {}, mine = false }
 local timer, polling = nil, false
 local token = 0
 local running = false
@@ -47,63 +46,6 @@ end
 local locToGroup = {}
 for _, g in ipairs(ns.GROUPS) do
     for loc in pairs(g.locs) do locToGroup[loc] = g.key end
-end
-
-------------------------------------------------------------------------
--- 드롭다운 (현재 값 버튼 + 팝업 메뉴)
-------------------------------------------------------------------------
-local function MakeDropdown(parent, x, y, width, title, getOptions, onPick)
-    local btn = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    btn:SetSize(width, 22)
-    btn:SetPoint("TOPLEFT", x, y)
-    local menu = CreateFrame("Frame", nil, parent, BackdropTemplateMixin and "BackdropTemplate" or nil)
-    menu:SetFrameStrata("FULLSCREEN_DIALOG")
-    menu:SetBackdrop({
-        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
-    })
-    if ns.SolidBG then ns.SolidBG(menu) end
-    menu:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2)
-    menu:Hide()
-    local items = {}
-    local d = { btn = btn, menu = menu }
-    function d.Refresh()
-        local opts = getOptions()
-        local shown = 0
-        for i, o in ipairs(opts) do
-            local b = items[i]
-            if not b then
-                b = CreateFrame("Button", nil, menu)
-                b:SetHeight(20)
-                b.t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-                b.t:SetPoint("LEFT", 6, 0)
-                b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
-                items[i] = b
-            end
-            b:SetPoint("TOPLEFT", 5, -8 - (i - 1) * 20)
-            b:SetWidth(math.max(width, 150) - 10)
-            b.t:SetText(o.label)
-            b:SetScript("OnClick", function()
-                menu:Hide()
-                onPick(o.value)
-                d.Refresh()
-            end)
-            b:Show()
-            shown = i
-            if o.selected then btn:SetText(title .. ": " .. o.label .. " ▼") end
-        end
-        for i = shown + 1, #items do items[i]:Hide() end
-        menu:SetSize(math.max(width, 150), shown * 20 + 16)
-    end
-    btn:SetScript("OnClick", function()
-        for _, o in ipairs(dropdowns) do if o ~= d then o.menu:Hide() end end
-        if menu:IsShown() then menu:Hide() else d.Refresh(); menu:Show() end
-    end)
-    dropdowns[#dropdowns + 1] = d
-    d.Refresh()
-    return d
 end
 
 ------------------------------------------------------------------------
@@ -155,15 +97,21 @@ local function GetRow(i)
     return r
 end
 
-local function SrcMatch(rec, src)
-    if not src then return true end
-    if src == "unknown" then return rec.new or rec.kinds.unknown or next(rec.kinds) == nil end
-    return rec.kinds[src] and true or false
+local function SrcMatch(rec, set)
+    if next(set) == nil then return true end
+    for key in pairs(set) do
+        if key == "unknown" then
+            if rec.new or rec.kinds.unknown or next(rec.kinds) == nil then return true end
+        elseif rec.kinds[key] then
+            return true
+        end
+    end
+    return false
 end
 
 local function HasQuality() return next(filter.q) ~= nil end
 local function HasFilter(minL, maxL)
-    return filter.text ~= "" or HasQuality() or filter.slot or filter.kind or filter.src or minL or maxL
+    return filter.text ~= "" or HasQuality() or next(filter.slot) or next(filter.kind) or next(filter.src) or minL or maxL
 end
 local function SetRunning(v)
     running = v
@@ -204,8 +152,8 @@ function Run()
     for id, rec in pairs(ns.index) do
         if rec and ns:IsItemDead(id) == false then
             local ok = true
-            if filter.slot and locToGroup[rec.loc] ~= filter.slot then ok = false end
-            if ok and filter.kind and (rec.classID .. ":" .. rec.subID) ~= filter.kind then ok = false end
+            if next(filter.slot) and not filter.slot[locToGroup[rec.loc]] then ok = false end
+            if ok and next(filter.kind) and not filter.kind[rec.classID .. ":" .. rec.subID] then ok = false end
             if ok and not SrcMatch(rec, filter.src) then ok = false end
             if ok and filter.mine and not ns:UsableByActive(rec) then ok = false end
             if ok then
@@ -352,54 +300,54 @@ local function Build()
     tl:SetText("~")
     maxBox = LevelEdit(tl, 8)
 
-    -- 드롭다운: 부위 / 종류 / 획득처
-    MakeDropdown(win, 20, -80, 190, L["부위"], function()
-        local o = { { label = L["전체"], value = nil, selected = filter.slot == nil } }
-        for _, g in ipairs(ns.GROUPS) do o[#o + 1] = { label = g.label, value = g.key, selected = filter.slot == g.key } end
-        return o
-    end, function(v) filter.slot = v end)
-
-    MakeDropdown(win, 216, -80, 220, L["종류"], function()
-        local o = { { label = L["전체"], value = nil, selected = filter.kind == nil } }
-        for _, k in ipairs(ARMOR_KINDS) do
-            local key = k[1] .. ":" .. k[2]
-            o[#o + 1] = { label = KindName(k[1], k[2]), value = key, selected = filter.kind == key }
+    -- 체크박스 묶음 (아무것도 안 고르면 전체)
+    local checkLists = {}
+    local y = -80
+    local PER_ROW = 5
+    local CELL = math.floor((W - 110) / PER_ROW)
+    local function MakeChecks(title, entries, set, colorFn)
+        local tl = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        tl:SetPoint("TOPLEFT", 22, y - 6)
+        tl:SetText(title)
+        for idx, e in ipairs(entries) do
+            local col, row = (idx - 1) % PER_ROW, math.floor((idx - 1) / PER_ROW)
+            local cb = CreateFrame("CheckButton", nil, win, "UICheckButtonTemplate")
+            cb:SetSize(22, 22)
+            cb:SetPoint("TOPLEFT", 78 + col * CELL, y - row * 22)
+            cb.label = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            cb.label:SetPoint("LEFT", cb, "RIGHT", 0, 0)
+            cb.label:SetWidth(CELL - 26)
+            cb.label:SetJustifyH("LEFT")
+            cb.label:SetWordWrap(false)
+            cb.label:SetText(e.label)
+            cb:SetScript("OnClick", function(self) set[e.key] = self:GetChecked() and true or nil end)
+            checkLists[#checkLists + 1] = { cb = cb, set = set, key = e.key }
         end
-        for _, k in ipairs(WEAPON_KINDS) do
-            local key = k[1] .. ":" .. k[2]
-            o[#o + 1] = { label = KindName(k[1], k[2]), value = key, selected = filter.kind == key }
-        end
-        return o
-    end, function(v) filter.kind = v end)
-
-    MakeDropdown(win, 442, -80, 170, L["획득처"], function()
-        local list = { { nil, L["전체"] }, { "drop", L["드랍"] }, { "quest", L["퀘스트"] }, { "craft", L["제작"] },
-                       { "vendor", L["상점"] }, { "unknown", L["출처 불명"] } }
-        local o = {}
-        for _, e in ipairs(list) do o[#o + 1] = { label = e[2], value = e[1], selected = filter.src == e[1] } end
-        return o
-    end, function(v) filter.src = v end)
-
-    -- 등급 체크박스 (아무것도 안 고르면 전체)
-    local ql = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    ql:SetPoint("TOPLEFT", 22, -118)
-    ql:SetText(L["등급"])
-    local prev
-    for q = 1, 5 do
-        local cb = CreateFrame("CheckButton", nil, win, "UICheckButtonTemplate")
-        cb:SetSize(24, 24)
-        if prev then cb:SetPoint("LEFT", prev.label, "RIGHT", 10, 0) else cb:SetPoint("LEFT", ql, "RIGHT", 10, 0) end
-        cb.label = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        cb.label:SetPoint("LEFT", cb, "RIGHT", 0, 0)
-        cb.label:SetText(QualityName(q))
-        cb:SetScript("OnClick", function(self) filter.q[q] = self:GetChecked() and true or nil end)
-        qualChecks[q] = cb
-        prev = cb
+        y = y - math.ceil(#entries / PER_ROW) * 22 - 6
     end
+
+    local qEntries = {}
+    for q = 1, 5 do qEntries[#qEntries + 1] = { key = q, label = QualityName(q) } end
+    MakeChecks(L["등급"], qEntries, filter.q)
+
+    local slotEntries = {}
+    for _, g in ipairs(ns.GROUPS) do slotEntries[#slotEntries + 1] = { key = g.key, label = g.label } end
+    MakeChecks(L["부위"], slotEntries, filter.slot)
+
+    local armorEntries, weaponEntries = {}, {}
+    for _, k in ipairs(ARMOR_KINDS) do armorEntries[#armorEntries + 1] = { key = k[1] .. ":" .. k[2], label = KindName(k[1], k[2]) } end
+    for _, k in ipairs(WEAPON_KINDS) do weaponEntries[#weaponEntries + 1] = { key = k[1] .. ":" .. k[2], label = KindName(k[1], k[2]) } end
+    MakeChecks(L["방어구"], armorEntries, filter.kind)
+    MakeChecks(L["무기"], weaponEntries, filter.kind)
+
+    MakeChecks(L["획득처"], {
+        { key = "drop", label = L["드랍"] }, { key = "quest", label = L["퀘스트"] }, { key = "craft", label = L["제작"] },
+        { key = "vendor", label = L["상점"] }, { key = "unknown", label = L["출처 불명"] },
+    }, filter.src)
 
     -- 내 직업(보고 있는 직업)이 착용 가능한 것만
     mineChk = CreateFrame("CheckButton", nil, win, "UICheckButtonTemplate")
-    mineChk:SetPoint("TOPLEFT", 16, -142)
+    mineChk:SetPoint("TOPLEFT", 16, y - 4)
     mineChk:SetSize(24, 24)
     local ml = mineChk:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     ml:SetPoint("LEFT", mineChk, "RIGHT", 2, 0)
@@ -408,7 +356,7 @@ local function Build()
 
     searchBtn = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
     searchBtn:SetSize(80, 22)
-    searchBtn:SetPoint("TOPRIGHT", -108, -142)
+    searchBtn:SetPoint("TOPRIGHT", -108, y - 4)
     searchBtn:SetText(L["검색"])
     searchBtn:SetScript("OnClick", function()
         if running then StopSearch() else StartSearch() end
@@ -416,18 +364,19 @@ local function Build()
 
     local reset = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
     reset:SetSize(80, 22)
-    reset:SetPoint("TOPRIGHT", -24, -142)
+    reset:SetPoint("TOPRIGHT", -24, y - 4)
     reset:SetText(L["초기화"])
     reset:SetScript("OnClick", function()
         StopSearch()
-        filter.text, filter.q, filter.slot, filter.kind, filter.src, filter.mine = "", {}, nil, nil, nil, false
+        filter.text, filter.mine = "", false
+        for _, set in ipairs({ filter.q, filter.slot, filter.kind, filter.src }) do wipe(set) end
         nameBox:SetText(""); ns.SearchDefaultRange(); mineChk:SetChecked(false)
-        for _, cb in ipairs(qualChecks) do cb:SetChecked(false) end
-        for _, d in ipairs(dropdowns) do d.Refresh() end
+        for _, c in ipairs(checkLists) do c.cb:SetChecked(false) end
     end)
+    y = y - 34
 
     countText = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    countText:SetPoint("TOPLEFT", 22, -172)
+    countText:SetPoint("TOPLEFT", 22, y)
     noteText = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     noteText:SetPoint("LEFT", countText, "RIGHT", 10, 0)
 
@@ -436,7 +385,7 @@ local function Build()
     hint:SetText(L["Shift+클릭: 채팅창에 링크 / Ctrl+클릭: 미리보기"])
 
     local scroll = CreateFrame("ScrollFrame", "BestGearFinderSearchScroll", win, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 18, -190)
+    scroll:SetPoint("TOPLEFT", 18, y - 18)
     scroll:SetPoint("BOTTOMRIGHT", -36, 34)
     listChild = CreateFrame("Frame", nil, scroll)
     listChild:SetSize(W - 70, 1)
@@ -448,8 +397,7 @@ local function Build()
     end
     ns.SearchDefaultRange = DefaultRange
     DefaultRange()
-    win:SetScript("OnShow", function() for _, d in ipairs(dropdowns) do d.Refresh() end end)
-    win:SetScript("OnHide", function() StopSearch(); for _, d in ipairs(dropdowns) do d.menu:Hide() end end)
+        win:SetScript("OnHide", function() StopSearch() end)
 end
 
 function ns:ToggleSearch()
