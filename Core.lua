@@ -45,10 +45,23 @@ local function InitDB()
     if ns.RelabelData then ns.RelabelData() end
 end
 
+-- 보고 있는 직업: 기본은 내 캐릭터, 드롭다운으로 다른 직업을 고르면 그 직업(보기 전용)
+function ns:ActiveClass()
+    local _, class = UnitClass("player")
+    return ns.viewClass or class
+end
+function ns:ActiveClassName()
+    local cls = ns:ActiveClass()
+    if ns.viewClass then
+        local t = LOCALIZED_CLASS_NAMES_MALE
+        return (t and t[cls]) or cls
+    end
+    return (UnitClass("player"))
+end
 function ns:CharKey() return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") end
 
 function ns:GetSpecList()
-    local _, class = UnitClass("player")
+    local class = ns:ActiveClass()
     return ns.SPECS[class] or ns.SPECS.WARRIOR
 end
 
@@ -119,7 +132,7 @@ local function IndexQuests()
     st.quest = 0
     if not Q then return end
     local idx = ns.index
-    local _, class = UnitClass("player")
+    local class = ns:ActiveClass()
     local cbit = CLASS_BIT[class]
     local raceID = select(3, UnitRace("player"))
     local rbit = raceID and 2 ^ (raceID - 1) or nil
@@ -431,7 +444,7 @@ local function IsClassAllowed(id)
     local ok = pcall(scanTip.SetHyperlink, scanTip, "item:" .. id)
     local n = scanTip:NumLines()
     if not ok or n == 0 then return nil end
-    local localized = UnitClass("player")
+    local localized = ns:ActiveClassName()
     local result = true
     for i = 2, n do
         local fs = _G["BestGearFinderScanTipTextLeft" .. i]
@@ -498,6 +511,7 @@ end
 
 local function EquippedScore(group, weights)
     local base, baseLink
+    if ns.viewClass then return 0, nil end
     for _, slot in ipairs(group.inv) do
         local link = GetInventoryItemLink("player", slot)
         local s = 0
@@ -537,6 +551,7 @@ end
 
 local function EquippedIlvl(group)
     local best
+    if ns.viewClass then return nil end
     for _, slot in ipairs(group.inv) do
         local link = GetInventoryItemLink("player", slot)
         if link then
@@ -572,11 +587,21 @@ end
 
 -- BiS 목록 조회: 스펙 칸 si 에서 아이템 id 의 등급 (2 = 1순위, 1 = 대안, 0 = 목록에 없음)
 local bisCache = {}
+function ns:SetViewClass(cls)
+    local _, mine = UnitClass("player")
+    if cls == mine then cls = nil end
+    ns.viewClass = cls
+    wipe(allowCache)
+    wipe(bisCache)
+    scoreCache = {}
+    self:ResetIndex()
+end
+
 local function BisLookup(si)
     local c = bisCache[si]
     if c then return c end
     c = { top = {}, alt = {} }
-    local _, class = UnitClass("player")
+    local class = ns:ActiveClass()
     local data = ns.BiS and ns.BiS[class]
     local names = ns.BIS_MAP and ns.BIS_MAP[class] and ns.BIS_MAP[class][si]
     if data and names then
@@ -605,7 +630,8 @@ function ns:BisRank(si, id)
 end
 
 function ns:Compute()
-    local _, class = UnitClass("player")
+    local class = ns:ActiveClass()
+    local other = ns.viewClass ~= nil   -- 다른 직업 보기: 내 장비와 비교하지 않음
     local rules = ns.CLASS_RULES[class]
     if not rules then return end
     local level = UnitLevel("player")
@@ -658,7 +684,7 @@ function ns:Compute()
 
     -- 현재 주무기가 양손이면 보조 장비 추천 생략
     local twoHanded = false
-    local mh = GetInventoryItemLink("player", 16)
+    local mh = (not other) and GetInventoryItemLink("player", 16) or nil
     if mh then
         local _, _, _, loc = GetItemInfoInstantC(mh)
         twoHanded = (loc == "INVTYPE_2HWEAPON" or loc == "INVTYPE_RANGED")
@@ -697,7 +723,7 @@ function ns:Compute()
                 -- 이미 착용 중인 아이템 (BiS 인데 이미 끼고 있으면 업그레이드가 아님)
                 local worn = {}
                 for _, invSlot in ipairs(g.inv) do
-                    local wid = GetInventoryItemID and GetInventoryItemID("player", invSlot)
+                    local wid = (not other) and GetInventoryItemID and GetInventoryItemID("player", invSlot)
                     if wid then worn[wid] = true end
                 end
                 local q = ns.searchText

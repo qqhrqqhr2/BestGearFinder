@@ -18,6 +18,8 @@ local nCols, colW, frameW = 1, 400, MIN_FRAME_W
 local EN_CLASS = { WARRIOR="Warrior", PALADIN="Paladin", HUNTER="Hunter", ROGUE="Rogue", PRIEST="Priest", SHAMAN="Shaman", MAGE="Mage", WARLOCK="Warlock", DRUID="Druid" }
 function ns:ClassLabel(class)
     if L["요구 레벨"] ~= "요구 레벨" and EN_CLASS[class] then return EN_CLASS[class] end
+    local t = LOCALIZED_CLASS_NAMES_MALE
+    if t and t[class] and class ~= select(2, UnitClass("player")) then return t[class] end
     return UnitClass("player")
 end
 
@@ -320,6 +322,10 @@ local function BuildFrame()
     frame:HookScript("OnHide", function() perMenu:Hide() end)
 
     -- 언어 드롭다운 (자동 / 한국어 / English) — 선택하면 UI를 다시 불러옵니다
+    -- 직업 보기 (기본: 내 캐릭터, 드롭다운으로 다른 직업 선택 → 보기 전용)
+    local CLASS_ORDER = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
+    local classBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    classBtn:SetSize(110, 20)
     local langBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     langBtn:SetSize(96, 20)
     langBtn:SetPoint("RIGHT", perBtn, "LEFT", -6, 0)
@@ -358,6 +364,44 @@ local function BuildFrame()
         if langMenu:IsShown() then langMenu:Hide() else langMenu:Show() end
     end)
     frame:HookScript("OnHide", function() langMenu:Hide() end)
+
+    classBtn:SetPoint("RIGHT", langBtn, "LEFT", -6, 0)
+    classBtn:SetText((ns.viewClass and ns:ClassLabel(ns.viewClass) or L["내 캐릭터"]) .. " ▼")
+    local classMenu = CreateFrame("Frame", nil, frame, template)
+    classMenu:SetFrameStrata("DIALOG")
+    classMenu:SetSize(120, (#CLASS_ORDER + 1) * 20 + 16)
+    classMenu:SetPoint("TOPRIGHT", classBtn, "BOTTOMRIGHT", 0, -2)
+    classMenu:SetBackdrop({
+        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    SolidBG(classMenu)
+    classMenu:Hide()
+    local opts = { { nil, L["내 캐릭터"] } }
+    for _, cls in ipairs(CLASS_ORDER) do opts[#opts + 1] = { cls, ns:ClassLabel(cls) } end
+    for i, o in ipairs(opts) do
+        local b = CreateFrame("Button", nil, classMenu)
+        b:SetSize(110, 20)
+        b:SetPoint("TOPLEFT", 5, -8 - (i - 1) * 20)
+        local t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        t:SetPoint("CENTER")
+        t:SetText(o[2])
+        b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+        b:SetScript("OnClick", function()
+            classMenu:Hide()
+            ns:SetViewClass(o[1])
+            ns:RebuildUI()
+        end)
+    end
+    Tip(classBtn, L["직업 보기"], L["다른 직업의 추천 장비를 봅니다. 이때는 내 장비와 비교하지 않는 보기 전용입니다. '내 캐릭터'를 고르면 돌아갑니다."])
+    classBtn:SetScript("OnClick", function()
+        langMenu:Hide()
+        if classMenu:IsShown() then classMenu:Hide() else classMenu:Show() end
+    end)
+    langBtn:HookScript("OnClick", function() classMenu:Hide() end)
+    frame:HookScript("OnHide", function() classMenu:Hide() end)
 
     -- 요구 레벨 범위 입력 줄
     local lbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -580,8 +624,8 @@ end
 function ns:UpdateUI()
     if not frame then return end
     if ns.UpdateLauncher then ns:UpdateLauncher() end
-    local _, class = UnitClass("player")
-    titleText:SetText(format("Best Gear Finder  %s%s|r  Lv.%d", Hex(RAID_CLASS_COLORS[class]), (ns.ClassLabel and ns:ClassLabel(class)) or UnitClass("player") or "", UnitLevel("player")))
+    local class = ns:ActiveClass()
+    titleText:SetText(format("Best Gear Finder  %s%s|r  Lv.%d", Hex(RAID_CLASS_COLORS[class]), (ns.ClassLabel and ns:ClassLabel(class)) or ns:ActiveClassName() or "", UnitLevel("player")))
     perBtn:SetText(L["슬롯당 "] .. self.db.perSlot .. L["개"] .. " ▼")
     local lo, hi, isAuto = self:GetRange()
     if not minEdit:HasFocus() then minEdit:SetText(tostring(lo)) end
