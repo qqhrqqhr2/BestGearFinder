@@ -411,6 +411,33 @@ local function BuildFrame()
     langBtn:HookScript("OnClick", function() classMenu:Hide() end)
     frame:HookScript("OnHide", function() classMenu:Hide() end)
 
+    -- 배경 투명도 (슬라이더, 저장됨)
+    SolidBG(frame)
+    local function ApplyAlpha(a)
+        a = math.max(0.3, math.min(1, a or 0.85))
+        if frame.solidBG then frame.solidBG:SetAlpha(a) end
+        if frame.SetBackdropColor then frame:SetBackdropColor(1, 1, 1, a) end
+        if frame.SetBackdropBorderColor then frame:SetBackdropBorderColor(1, 1, 1, math.min(1, a + 0.2)) end
+    end
+    ns.ApplyMainAlpha = ApplyAlpha
+    ApplyAlpha(ns.db.mainAlpha or 0.85)
+    local sl = CreateFrame("Slider", "BestGearFinderMainAlpha", frame, "OptionsSliderTemplate")
+    sl:SetPoint("TOPRIGHT", -60, -70)
+    sl:SetSize(110, 14)
+    sl:SetMinMaxValues(0.3, 1)
+    sl:SetValueStep(0.05)
+    if sl.SetObeyStepOnDrag then sl:SetObeyStepOnDrag(true) end
+    local slText = _G["BestGearFinderMainAlphaText"]
+    if slText then slText:SetText(L["투명도"]); slText:ClearAllPoints(); slText:SetPoint("RIGHT", sl, "LEFT", -6, 0) end
+    local slLow, slHigh = _G["BestGearFinderMainAlphaLow"], _G["BestGearFinderMainAlphaHigh"]
+    if slLow then slLow:SetText("") end
+    if slHigh then slHigh:SetText("") end
+    sl:SetValue(ns.db.mainAlpha or 0.85)
+    sl:SetScript("OnValueChanged", function(_, v)
+        ns.db.mainAlpha = v
+        ApplyAlpha(v)
+    end)
+
     -- 요구 레벨 범위 입력 줄
     local lbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     lbl:SetPoint("TOPLEFT", 20, -66)
