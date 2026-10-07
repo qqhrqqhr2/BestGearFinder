@@ -551,10 +551,10 @@ local function Request(id, prio)
     end
 end
 
--- 요구 레벨이 없는(0) 아이템은 아이템 레벨을 요구 레벨 대신 사용
-local function EffReq(req, ilvl)
-    if req and req > 0 then return req end
-    return math.max(1, math.min(ilvl or 1, 60))
+-- 요구 레벨이 없는(0) 아이템은 어느 레벨에서든 착용할 수 있으므로 항상 범위 안으로 본다.
+local function InRange(req, minReq, maxReq)
+    if not req or req <= 0 then return true end
+    return req >= minReq and req <= maxReq
 end
 
 -- BiS 목록 조회: 스펙 칸 si 에서 아이템 id 의 등급 (2 = 1순위, 1 = 대안, 0 = 목록에 없음)
@@ -615,7 +615,7 @@ function ns:Compute()
                 if dead[id] then skipped = skipped + 1 else pending = pending + 1 end
             else
                 ready = ready + 1
-                if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and not IsAbilityRelic(id, rec) and EffReq(reqLevel, ilvl) <= maxReq and EffReq(reqLevel, ilvl) >= minReq then
+                if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and not IsAbilityRelic(id, rec) and InRange(reqLevel, minReq, maxReq) then
                     local entry = { id = id, link = link, ilvl = ilvl or 0, req = reqLevel or 0, rec = rec, quality = quality }
                     for _, g in ipairs(locToGroups[rec.loc]) do
                         table.insert(buckets[g.key], entry)
@@ -1036,7 +1036,7 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         end
         P("sourceAllowed=" .. tostring(ns:SourceAllowed(rec)) .. " usable=" .. tostring(Usable(rec, rules, GetArmorType(rules, level), dw)))
         local name, _, quality, ilvl, req = GetItemInfoC(id)
-        P(("name=%s quality=%s ilvl=%s req=%s effReq=%s range=%d-%d"):format(tostring(name), tostring(quality), tostring(ilvl), tostring(req), tostring(name and EffReq(req, ilvl)), minReq, maxReq))
+        P(("name=%s quality=%s ilvl=%s req=%s inRange=%s range=%d-%d"):format(tostring(name), tostring(quality), tostring(ilvl), tostring(req), tostring(name and InRange(req, minReq, maxReq)), minReq, maxReq))
         do
             local _, link = GetItemInfoC(id)
             local st = link and GetStats(link)
