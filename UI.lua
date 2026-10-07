@@ -71,6 +71,12 @@ local function CreateRow(i)
         elseif self.bis == 1 then
             GameTooltip:AddLine(L["레벨 30 BiS 목록에 있는 대안 아이템입니다. (wowf.io 기준)"], 0.9, 0.8, 0.4)
         end
+        if self.weights and self.link and ns.StatDiffText then
+            local okD, txt = pcall(ns.StatDiffText, self.link, self.baseLink, self.weights, 4)
+            if okD and txt and txt ~= "" then
+                GameTooltip:AddLine(format(L["현재 장비 대비: %s"], txt), 0.6, 0.8, 1, true)
+            end
+        end
         if self.score then
             GameTooltip:AddLine(format(L["추정 점수: 이 아이템 %.1f / 착용 중 %.1f"], self.score, self.baseScore or 0), 0.6, 0.9, 0.6)
         end
@@ -641,6 +647,7 @@ function ns:UpdateUI()
                     r:ClearAllPoints()
                     r:SetPoint("TOPLEFT", child, "TOPLEFT", (si - 1) * colW + 2, -(y + (n - 1) * ROW_H))
                     r.link, r.rec, r.baseIlvl, r.score, r.baseScore, r.bis = e.link, e.rec, e.baseIlvl, e.score, e.baseScore, e.bis
+                    r.baseLink, r.weights = e.baseLink, e.weights
                     r.icon:SetTexture(e.rec.icon)
                     local mark = e.upgrade and "|cff40ff40▲|r " or ""
                     if e.bis == 2 then mark = "|cffffd100[BiS]|r " .. mark end

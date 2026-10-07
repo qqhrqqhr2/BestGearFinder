@@ -317,15 +317,82 @@ for _, g in ipairs(ns.GROUPS) do
     end
 end
 
+-- 착용 효과(주문력/치유량/공격력 등)는 GetItemStats 에 안 나올 수 있어서,
+-- 툴팁 줄에서 게임의 현지화 문자열로 만든 패턴으로 직접 읽는다.
+local EFFECT_TOKENS = {
+    "ITEM_MOD_SPELL_POWER_SHORT", "ITEM_MOD_HEALING_DONE_SHORT", "ITEM_MOD_SPELL_HEALING_DONE_SHORT",
+    "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", "ITEM_MOD_ATTACK_POWER_SHORT", "ITEM_MOD_RANGED_ATTACK_POWER_SHORT",
+    "ITEM_MOD_FERAL_ATTACK_POWER_SHORT", "ITEM_MOD_MANA_REGENERATION_SHORT",
+    "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT", "ITEM_MOD_DODGE_RATING_SHORT", "ITEM_MOD_PARRY_RATING_SHORT",
+    "ITEM_MOD_BLOCK_VALUE_SHORT",
+}
+local effectPatterns
+local function Esc(str) return (str:gsub("([%^%$%(%)%.%[%]%*%+%-%?%%])", "%%%1")) end
+local function BuildEffectPatterns()
+    effectPatterns = {}
+    for _, tok in ipairs(EFFECT_TOKENS) do
+        local pats = {}
+        local base = tok:gsub("_SHORT$", "")
+        local long, short = _G[base], _G[tok]
+        if type(long) == "string" and long:find("%%d") then
+            pats[#pats + 1] = Esc(long):gsub("%%%%d", "(%%d+)")
+        end
+        if type(short) == "string" and short ~= "" then
+            local e = Esc(short)
+            pats[#pats + 1] = "^%+?(%d+)%s*" .. e
+            pats[#pats + 1] = e .. "%s*%+(%d+)"
+        end
+        if #pats > 0 then effectPatterns[tok] = pats end
+    end
+end
+local function TooltipStats(id)
+    if not (C_TooltipInfo and C_TooltipInfo.GetItemByID) then return nil end
+    local ok, data = pcall(C_TooltipInfo.GetItemByID, id)
+    if not ok or type(data) ~= "table" or type(data.lines) ~= "table" or #data.lines == 0 then return nil end
+    if not effectPatterns then BuildEffectPatterns() end
+    local out = {}
+    for _, ln in ipairs(data.lines) do
+        local t = ln.leftText
+        if type(t) == "string" and t ~= "" then
+            t = t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+            for tok, pats in pairs(effectPatterns) do
+                for _, p in ipairs(pats) do
+                    local v = tonumber(t:match(p))
+                    if v then
+                        if (out[tok] or 0) < v then out[tok] = v end
+                        break
+                    end
+                end
+            end
+        end
+    end
+    return out
+end
+ns.TooltipStats = TooltipStats
+
 local statsCache = {}
 local function GetStats(link)
     local st = statsCache[link]
     if st == nil then
-        st = GetItemStatsC and GetItemStatsC(link) or false
-        statsCache[link] = st or false
+        local base = GetItemStatsC and GetItemStatsC(link) or false
+        local id = tonumber(link:match("item:(%d+)"))
+        local tip = id and TooltipStats(id)
+        if tip then
+            local merged = {}
+            if base then for k, v in pairs(base) do merged[k] = v end end
+            for k, v in pairs(tip) do
+                if (merged[k] or 0) < v then merged[k] = v end   -- 같은 능력치는 큰 값 하나만 (중복 합산 방지)
+            end
+            st = merged
+            statsCache[link] = st
+        else
+            st = base
+            if base then statsCache[link] = base end   -- 툴팁을 못 읽었으면 다음에 다시 시도
+        end
     end
     return st
 end
+ns.GetStats = GetStats
 
 local function ScoreItem(link, ilvl, weights)
     local sc = (ilvl or 0) * ns.ILVL_WEIGHT
@@ -420,7 +487,7 @@ local function Usable(rec, rules, armorType, dwOK)
 end
 
 local function EquippedScore(group, weights)
-    local base
+    local base, baseLink
     for _, slot in ipairs(group.inv) do
         local link = GetInventoryItemLink("player", slot)
         local s = 0
@@ -428,9 +495,34 @@ local function EquippedScore(group, weights)
             local _, _, _, ilvl = GetItemInfoC(link)
             s = ScoreItem(link, ilvl, weights)
         end
-        base = base and math.min(base, s) or s
+        if not base or s < base then base, baseLink = s, link end
     end
-    return base or 0
+    return base or 0, baseLink
+end
+
+-- 현재 장비(교체될 것)와 비교해 점수에 가장 크게 기여하는 능력치 차이 문자열
+function ns.StatDiffText(link, baseLink, weights, maxN)
+    local a = GetStats(link) or {}
+    local b = (baseLink and GetStats(baseLink)) or {}
+    local list = {}
+    local seen = {}
+    for k in pairs(a) do seen[k] = true end
+    for k in pairs(b) do seen[k] = true end
+    for k in pairs(seen) do
+        local m = weights[k]
+        if m and m > 0 then
+            local d = (a[k] or 0) - (b[k] or 0)
+            if math.abs(d) >= 0.5 then list[#list + 1] = { k = k, d = d, w = math.abs(d) * m } end
+        end
+    end
+    table.sort(list, function(x, y) return x.w > y.w end)
+    local out = {}
+    for i = 1, math.min(maxN or 4, #list) do
+        local e = list[i]
+        local label = type(_G[e.k]) == "string" and _G[e.k] or e.k:gsub("^ITEM_MOD_", ""):gsub("_SHORT$", "")
+        out[#out + 1] = format("%s %+d", label, math.floor(e.d + (e.d >= 0 and 0.5 or -0.5)))
+    end
+    return table.concat(out, ", ")
 end
 
 local function EquippedIlvl(group)
@@ -578,7 +670,7 @@ function ns:Compute()
                     if a.score ~= b.score then return a.score > b.score end
                     return a.e.id < b.e.id
                 end)
-                local base = EquippedScore(g, weights)
+                local base, baseLink = EquippedScore(g, weights)
                 if si == 1 then self.funnel = self.funnel or {}; self.funnel[g.key] = { cand = #list, base = base, top = list[1] and list[1].score or 0, topId = list[1] and list[1].e.id } end
                 local baseIlvl = EquippedIlvl(g)
                 local picked = {}
@@ -597,7 +689,7 @@ function ns:Compute()
                         if not db.classFilter or IsClassAllowed(e.id) ~= false then
                             picked[#picked + 1] = { id = e.id, link = e.link, ilvl = e.ilvl, req = e.req, rec = e.rec,
                                 quality = e.quality, score = w.score, upgrade = isUpgrade, baseIlvl = baseIlvl, baseScore = base,
-                                bis = w.bis }
+                                bis = w.bis, baseLink = baseLink, weights = weights }
                             if #picked >= perSlot then break end
                         end
                     end
@@ -958,6 +1050,17 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
                 end
             else
                 P("stats: not available (" .. tostring(link and "no stats" or "not loaded") .. ")")
+            end
+        end
+        do
+            local ts = ns.TooltipStats(id)
+            if ts then
+                local parts = {}
+                for k, v in pairs(ts) do parts[#parts + 1] = k:gsub("^ITEM_MOD_", ""):gsub("_SHORT$", "") .. "=" .. v end
+                table.sort(parts)
+                P("tooltip stats: " .. (#parts > 0 and table.concat(parts, ", ") or "(none read)"))
+            else
+                P("tooltip stats: tooltip not readable")
             end
         end
         P("qualityAllowed=" .. tostring(quality and db.qual[quality]) .. " junkName=" .. tostring(name and IsJunkName(name) and true or false))

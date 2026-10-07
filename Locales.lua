@@ -161,6 +161,7 @@ local en = {
     ["최소 드랍률: %.1f%%"] = "Minimum drop rate: %.1f%%",
     ["레벨 30 BiS 목록의 1순위 아이템입니다. (wowf.io 기준)"] = "Top pick on the level 30 BiS list (per wowf.io).",
     ["레벨 30 BiS 목록에 있는 대안 아이템입니다. (wowf.io 기준)"] = "Alternative on the level 30 BiS list (per wowf.io).",
+    ["현재 장비 대비: %s"] = "Compared to equipped: %s",
     ["추정 점수: 이 아이템 %.1f / 착용 중 %.1f"] = "Est. score: this item %.1f / equipped %.1f",
     ["추천할 아이템이 없습니다."] = "No items to recommend.",
     ["출처"] = "Sources",

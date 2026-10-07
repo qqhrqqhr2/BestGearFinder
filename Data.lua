@@ -115,8 +115,8 @@ ns.SPECS = {
     },
     DRUID = {
         { name = L["조화 (딜)"], nameKo = "조화 (딜)",    w = merge({ [INT]=1, [SPI]=0.3, [STA]=0.4 }, SDMG) },
-        { name = L["야성 (딜)"], nameKo = "야성 (딜)",    w = { [STR]=1, [AGI]=0.75, [STA]=0.3, [AP]=0.5, [FAP]=0.5 } },  -- 힘 1 = 공격력 2
-        { name = L["야성 (탱)"], nameKo = "야성 (탱)",    w = { [STA]=1, [AGI]=0.8, [STR]=0.4, [FAP]=0.3, [ARMOR]=0.05 } },
+        { name = L["야성 (딜)"], nameKo = "야성 (딜)",    w = { [STR]=1, [AGI]=0.75, [STA]=0.3, [AP]=0.5, [FAP]=0.5, [DPS]=3 } },  -- 힘 1 = 공격력 2
+        { name = L["야성 (탱)"], nameKo = "야성 (탱)",    w = { [STA]=1, [AGI]=0.8, [STR]=0.4, [FAP]=0.3, [DPS]=1, [ARMOR]=0.05 } },
         { name = L["회복 (힐)"], nameKo = "회복 (힐)",    w = merge({ [INT]=1, [SPI]=0.5, [STA]=0.3, [MP5]=2 }, HEAL) },
     },
 }
