@@ -379,6 +379,7 @@ local function Build()
     if sl.SetObeyStepOnDrag then sl:SetObeyStepOnDrag(true) end
     ns.alphaSeq = (ns.alphaSeq or 0) + 1
     local sname = sl:GetName()
+    if type(sname) ~= "string" then sname = nil end
     local slText = sname and _G[sname .. "Text"]
     if slText then slText:SetText("") end
     local slLabel = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
