@@ -21,7 +21,8 @@ ApplyDefaults()
 local timer, polling = nil, false
 local token = 0
 local running = false
-local lastPending, stall = -1, 0
+local lastPending, lastChange = -1, 0
+local refreshQueued = false
 local searchBtn, qualChecks, noReqChk = nil, {}, nil
 local bar
 
@@ -173,6 +174,7 @@ local function HasFilter(minL, maxL)
 end
 local function SetRunning(v)
     running = v
+    ns.fastLoad = v        -- 검색 중에는 아이템 정보 요청을 더 빠르게 보낸다
     if not v and bar then bar:Hide() end
     if searchBtn then searchBtn:SetText(v and L["중지"] or L["검색"]) end
 end
@@ -279,10 +281,11 @@ function Run()
         end
     end
     -- 대기 개수가 몇 번 연속으로 안 줄면(서버가 답하지 않는 아이템) 기다리지 않고 끝낸다
-    if pending > 0 and pending == lastPending then stall = stall + 1 else stall = 0 end
+    local now = GetTime()
+    if pending ~= lastPending then lastChange = now end
     lastPending = pending
-    if pending > 0 and stall < 3 then
-        Schedule(1.0)          -- 아이템 정보가 더 도착하면 갱신 (중지를 누를 때까지)
+    if pending > 0 and now - lastChange < 4 then
+        Schedule(0.7)          -- 아이템 정보가 더 도착하면 갱신 (중지를 누를 때까지)
     else
         if pending > 0 then noteText:SetText(format(L["%d개는 불러오지 못해 제외했습니다"], pending)) end
         SetRunning(false)      -- 끝
@@ -291,7 +294,7 @@ end
 
 local function StartSearch()
     if not win then return end
-    lastPending, stall = -1, 0
+    lastPending, lastChange = -1, GetTime()
     SetRunning(true)
     Schedule(0.01)
 end
@@ -305,7 +308,16 @@ local function StopSearch()
 end
 
 -- 아이템 정보가 도착하면 (검색창이 열려 있고 불러오는 중일 때) 조금 뒤에 다시 검색
-function ns.OnItemInfo() end
+function ns.OnItemInfo()
+    -- 정보가 도착하면 (너무 자주는 말고) 곧바로 목록을 갱신
+    if running and not refreshQueued then
+        refreshQueued = true
+        C_Timer.After(0.35, function()
+            refreshQueued = false
+            if running then Run() end
+        end)
+    end
+end
 
 ------------------------------------------------------------------------
 -- 창 만들기

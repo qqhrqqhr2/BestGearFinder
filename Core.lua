@@ -1027,9 +1027,9 @@ driver:SetScript("OnUpdate", function(_, dt)
     end
     -- 아이템 정보 요청을 조금씩 나눠 보냄
     acc = acc + dt
-    if acc >= 0.1 and (#queue > 0 or #queueLo > 0) then
+    if acc >= (ns.fastLoad and 0.03 or 0.1) and (#queue > 0 or #queueLo > 0) then
         acc = 0
-        for _ = 1, 30 do
+        for _ = 1, (ns.fastLoad and 200 or 30) do
             local id = table.remove(queue) or table.remove(queueLo)
             if not id then break end
             if C_Item and C_Item.RequestLoadItemDataByID then
