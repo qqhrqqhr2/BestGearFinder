@@ -23,6 +23,7 @@ local token = 0
 local running = false
 local lastPending, stall = -1, 0
 local searchBtn, qualChecks, noReqChk = nil, {}, nil
+local bar
 
 local ARMOR_KINDS = { { 4, 1 }, { 4, 2 }, { 4, 3 }, { 4, 4 }, { 4, 6 }, { 4, 0 }, { 4, 7 }, { 4, 8 }, { 4, 9 } }
 local WEAPON_KINDS = { { 2, 0 }, { 2, 1 }, { 2, 4 }, { 2, 5 }, { 2, 7 }, { 2, 8 }, { 2, 15 }, { 2, 13 }, { 2, 6 }, { 2, 10 },
@@ -172,6 +173,7 @@ local function HasFilter(minL, maxL)
 end
 local function SetRunning(v)
     running = v
+    if not v and bar then bar:Hide() end
     if searchBtn then searchBtn:SetText(v and L["중지"] or L["검색"]) end
 end
 
@@ -205,7 +207,7 @@ function Run()
         return
     end
     local text = filter.text
-    local pending, results = 0, {}
+    local pending, results, cand = 0, {}, 0
     for id, rec in pairs(ns.index) do
         if rec and ns:IsItemDead(id) == false then
             local ok = true
@@ -213,6 +215,7 @@ function Run()
             if ok and not SrcMatch(rec, filter.src) then ok = false end
             if ok and filter.mine and not ns:UsableByActive(rec) then ok = false end
             if ok then
+                cand = cand + 1
                 local name, link, quality, ilvl, req, _, _, _, _, icon = ns.GetItemInfoC(id)
                 if not name then
                     pending = pending + 1
@@ -266,6 +269,15 @@ function Run()
         countText:SetText(format(L["%d개"], total))
     end
     noteText:SetText(pending > 0 and format(L["%d개 불러오는 중..."], pending) or (total == 0 and L["검색 결과가 없습니다."] or ""))
+    -- 로딩바: 불러온 비율 (후보 중 정보가 도착한 아이템)
+    if bar then
+        if pending > 0 and cand > 0 then
+            bar:SetValue((cand - pending) / cand)
+            bar:Show()
+        else
+            bar:Hide()
+        end
+    end
     -- 대기 개수가 몇 번 연속으로 안 줄면(서버가 답하지 않는 아이템) 기다리지 않고 끝낸다
     if pending > 0 and pending == lastPending then stall = stall + 1 else stall = 0 end
     lastPending = pending
@@ -445,6 +457,17 @@ local function Build()
     countText:SetPoint("TOPLEFT", 22, y)
     noteText = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     noteText:SetPoint("LEFT", countText, "RIGHT", 10, 0)
+    bar = CreateFrame("StatusBar", nil, win)
+    bar:SetPoint("TOPRIGHT", -36, y + 5)
+    bar:SetSize(260, 10)
+    bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    bar:SetStatusBarColor(0.2, 0.75, 0.3)
+    bar:SetMinMaxValues(0, 1)
+    bar:SetValue(0)
+    local bbg = bar:CreateTexture(nil, "BACKGROUND")
+    bbg:SetAllPoints()
+    bbg:SetColorTexture(0, 0, 0, 0.6)
+    bar:Hide()
     y = y - 18
 
     local hint = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
