@@ -239,7 +239,7 @@ local function IndexForeverExtra()
         end
         return false
     end
-    for _, X in ipairs({ ns.ForeverExtra, ns.WowfData }) do
+    for _, X in ipairs({ ns.ForeverExtra, ns.DungeonData }) do
         if type(X) == "table" then
             Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc }) end end)
             Each(X.quests, function(rec, e) AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false }) end)

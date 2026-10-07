@@ -18,7 +18,7 @@ Data.lua
 GearDatabase.lua
 QuestData.lua
 ForeverExtra.lua
-WowfData.lua
+DungeonData.lua
 BiSData.lua
 Core.lua
 UI.lua
