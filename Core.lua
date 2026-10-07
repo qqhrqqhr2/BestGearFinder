@@ -208,10 +208,8 @@ end
 
 -- Forever 전용 획득처 (ForeverExtra.lua): CMaNGOS 1.12 DB에 없는 아이템의 출처
 local function IndexForeverExtra()
-    local X = ns.ForeverExtra
     local st = ns.indexStats
     st.extra = 0
-    if type(X) ~= "table" then return end
     local idx = ns.index
     local function Rec(id)
         local rec = idx[id]
@@ -233,10 +231,22 @@ local function IndexForeverExtra()
             MaybeYield()
         end
     end
-    Each(X.drops, function(rec, e) AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc }) end)
-    Each(X.quests, function(rec, e) AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false }) end)
-    Each(X.vendors, function(rec, e) AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc }) end)
-    Each(X.craft, function(rec, e) AddSource(rec, e.skill, "", nil, "craft", nil, {}) end)
+    -- 같은 보스가 이미 출처로 등록되어 있으면(이름만 다른 경우 포함) 중복 추가하지 않는다
+    local function HasBoss(rec, boss)
+        local b = tostring(boss or ""):lower()
+        for _, s in ipairs(rec.src) do
+            if s.kind == "drop" and tostring(s.boss or ""):lower() == b then return true end
+        end
+        return false
+    end
+    for _, X in ipairs({ ns.ForeverExtra, ns.WowfData }) do
+        if type(X) == "table" then
+            Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc }) end end)
+            Each(X.quests, function(rec, e) AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false }) end)
+            Each(X.vendors, function(rec, e) AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc }) end)
+            Each(X.craft, function(rec, e) AddSource(rec, e.skill, "", nil, "craft", nil, {}) end)
+        end
+    end
 end
 
 local function IndexBody()
