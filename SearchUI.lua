@@ -191,7 +191,7 @@ function Run()
     local minL, maxL = tonumber(minBox:GetText()), tonumber(maxBox:GetText())
     if not HasFilter(minL, maxL) then
         countText:SetText("")
-        noteText:SetText(L["조건을 하나 이상 고르거나 이름을 입력하세요."])
+        noteText:SetText(L["조건을 고르면 해당하는 아이템이 모두 표시됩니다."])
         return
     end
     local text = filter.text
@@ -382,7 +382,7 @@ local function Build()
     reset:SetText(L["초기화"])
     reset:SetScript("OnClick", function()
         filter.text, filter.quality, filter.slot, filter.kind, filter.src, filter.mine = "", nil, nil, nil, nil, false
-        nameBox:SetText(""); minBox:SetText(""); maxBox:SetText(""); mineChk:SetChecked(false)
+        nameBox:SetText(""); ns.SearchDefaultRange(); mineChk:SetChecked(false)
         for _, d in ipairs(dropdowns) do d.Refresh() end
         Schedule(0.05)
     end)
@@ -403,6 +403,12 @@ local function Build()
     listChild:SetSize(W - 70, 1)
     scroll:SetScrollChild(listChild)
 
+    local function DefaultRange()
+        local lo, hi = ns:GetRange()
+        minBox:SetText(tostring(lo)); maxBox:SetText(tostring(hi))
+    end
+    ns.SearchDefaultRange = DefaultRange
+    DefaultRange()
     win:SetScript("OnShow", function() for _, d in ipairs(dropdowns) do d.Refresh() end; Run() end)
     win:SetScript("OnHide", function() for _, d in ipairs(dropdowns) do d.menu:Hide() end end)
 end
