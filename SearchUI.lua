@@ -7,10 +7,12 @@ local W, H = 640, 560
 local ROW_H, MAX_ROWS = 22, 150
 local win, listChild, countText, noteText, nameBox, minBox, maxBox, mineChk
 local rows = {}
-local filter = { text = "", quality = nil, slot = nil, kind = nil, src = nil, mine = false }
+local filter = { text = "", q = {}, slot = nil, kind = nil, src = nil, mine = false }
 local dropdowns = {}
 local timer, polling = nil, false
 local token = 0
+local running = false
+local searchBtn, qualChecks = nil, {}
 
 local ARMOR_KINDS = { { 4, 1 }, { 4, 2 }, { 4, 3 }, { 4, 4 }, { 4, 6 }, { 4, 0 }, { 4, 7 }, { 4, 8 }, { 4, 9 } }
 local WEAPON_KINDS = { { 2, 0 }, { 2, 1 }, { 2, 4 }, { 2, 5 }, { 2, 7 }, { 2, 8 }, { 2, 15 }, { 2, 13 }, { 2, 6 }, { 2, 10 },
@@ -159,8 +161,13 @@ local function SrcMatch(rec, src)
     return rec.kinds[src] and true or false
 end
 
+local function HasQuality() return next(filter.q) ~= nil end
 local function HasFilter(minL, maxL)
-    return filter.text ~= "" or filter.quality or filter.slot or filter.kind or filter.src or minL or maxL
+    return filter.text ~= "" or HasQuality() or filter.slot or filter.kind or filter.src or minL or maxL
+end
+local function SetRunning(v)
+    running = v
+    if searchBtn then searchBtn:SetText(v and L["중지"] or L["검색"]) end
 end
 
 local Run
@@ -176,22 +183,20 @@ local function Schedule(delay)
 end
 
 function Run()
-    if not win or not win:IsShown() then return end
+    if not win or not win:IsShown() or not running then return end
     for _, r in ipairs(rows) do r:Hide() end
     if ns.indexState ~= "done" then
         ns:EnsureIndex()
         countText:SetText("")
         noteText:SetText(L["아이템 정보를 불러오는 중입니다..."])
-        if not polling then
-            polling = true
-            C_Timer.After(1, function() polling = false; Run() end)
-        end
+        Schedule(1)
         return
     end
     local minL, maxL = tonumber(minBox:GetText()), tonumber(maxBox:GetText())
     if not HasFilter(minL, maxL) then
         countText:SetText("")
         noteText:SetText(L["조건을 고르면 해당하는 아이템이 모두 표시됩니다."])
+        SetRunning(false)
         return
     end
     local text = filter.text
@@ -210,7 +215,7 @@ function Run()
                     ns:RequestItem(id)
                 else
                     local good = true
-                    if filter.quality and (quality or 0) < filter.quality then good = false end
+                    if HasQuality() and not filter.q[quality or 0] then good = false end
                     if good and minL and (req or 0) < minL then good = false end
                     if good and maxL and (req or 0) > maxL then good = false end
                     if good and text ~= "" then
@@ -255,14 +260,29 @@ function Run()
         countText:SetText(format(L["%d개"], total))
     end
     noteText:SetText(pending > 0 and format(L["%d개 불러오는 중..."], pending) or (total == 0 and L["검색 결과가 없습니다."] or ""))
+    if pending > 0 then
+        Schedule(1.2)          -- 아이템 정보가 더 도착하면 갱신 (중지를 누를 때까지)
+    else
+        SetRunning(false)      -- 끝
+    end
+end
+
+local function StartSearch()
+    if not win then return end
+    SetRunning(true)
+    Schedule(0.01)
+end
+local function StopSearch()
+    token = token + 1          -- 예약된 갱신 취소
+    SetRunning(false)
+    if noteText then
+        local t = noteText:GetText() or ""
+        noteText:SetText(t:find("%.%.%.") and L["중지됨"] or t)
+    end
 end
 
 -- 아이템 정보가 도착하면 (검색창이 열려 있고 불러오는 중일 때) 조금 뒤에 다시 검색
-function ns.OnItemInfo()
-    if win and win:IsShown() and not timer and noteText and noteText:GetText() and noteText:GetText():find("%.%.%.") then
-        Schedule(1.2)
-    end
-end
+function ns.OnItemInfo() end
 
 ------------------------------------------------------------------------
 -- 창 만들기
@@ -304,10 +324,10 @@ local function Build()
     nameBox:SetAutoFocus(false)
     nameBox:SetMaxLetters(40)
     nameBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    nameBox:SetScript("OnEnterPressed", function(self) self:ClearFocus(); Schedule(0.01) end)
+    nameBox:SetScript("OnEnterPressed", function(self) self:ClearFocus(); StartSearch() end)
     nameBox:SetScript("OnTextChanged", function(self)
         local t = string.lower((self:GetText() or ""):match("^%s*(.-)%s*$"))
-        if t ~= filter.text then filter.text = t; Schedule(0.35) end
+        filter.text = t
     end)
 
     -- 요구 레벨 범위
@@ -323,8 +343,7 @@ local function Build()
         e:SetMaxLetters(2)
         e:SetJustifyH("CENTER")
         e:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-        e:SetScript("OnEnterPressed", function(self) self:ClearFocus(); Schedule(0.01) end)
-        e:SetScript("OnTextChanged", function() Schedule(0.5) end)
+        e:SetScript("OnEnterPressed", function(self) self:ClearFocus(); StartSearch() end)
         return e
     end
     minBox = LevelEdit(ll, 14)
@@ -333,20 +352,14 @@ local function Build()
     tl:SetText("~")
     maxBox = LevelEdit(tl, 8)
 
-    -- 드롭다운: 등급 / 부위 / 종류 / 획득처
-    MakeDropdown(win, 20, -80, 140, L["등급"], function()
-        local o = { { label = L["전체"], value = nil, selected = filter.quality == nil } }
-        for q = 1, 5 do o[#o + 1] = { label = QualityName(q) .. " " .. L["이상"], value = q, selected = filter.quality == q } end
-        return o
-    end, function(v) filter.quality = v; Schedule(0.05) end)
-
-    MakeDropdown(win, 166, -80, 140, L["부위"], function()
+    -- 드롭다운: 부위 / 종류 / 획득처
+    MakeDropdown(win, 20, -80, 190, L["부위"], function()
         local o = { { label = L["전체"], value = nil, selected = filter.slot == nil } }
         for _, g in ipairs(ns.GROUPS) do o[#o + 1] = { label = g.label, value = g.key, selected = filter.slot == g.key } end
         return o
-    end, function(v) filter.slot = v; Schedule(0.05) end)
+    end, function(v) filter.slot = v end)
 
-    MakeDropdown(win, 312, -80, 170, L["종류"], function()
+    MakeDropdown(win, 216, -80, 220, L["종류"], function()
         local o = { { label = L["전체"], value = nil, selected = filter.kind == nil } }
         for _, k in ipairs(ARMOR_KINDS) do
             local key = k[1] .. ":" .. k[2]
@@ -357,38 +370,64 @@ local function Build()
             o[#o + 1] = { label = KindName(k[1], k[2]), value = key, selected = filter.kind == key }
         end
         return o
-    end, function(v) filter.kind = v; Schedule(0.05) end)
+    end, function(v) filter.kind = v end)
 
-    MakeDropdown(win, 488, -80, 130, L["획득처"], function()
+    MakeDropdown(win, 442, -80, 170, L["획득처"], function()
         local list = { { nil, L["전체"] }, { "drop", L["드랍"] }, { "quest", L["퀘스트"] }, { "craft", L["제작"] },
                        { "vendor", L["상점"] }, { "unknown", L["출처 불명"] } }
         local o = {}
         for _, e in ipairs(list) do o[#o + 1] = { label = e[2], value = e[1], selected = filter.src == e[1] } end
         return o
-    end, function(v) filter.src = v; Schedule(0.05) end)
+    end, function(v) filter.src = v end)
+
+    -- 등급 체크박스 (아무것도 안 고르면 전체)
+    local ql = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    ql:SetPoint("TOPLEFT", 22, -118)
+    ql:SetText(L["등급"])
+    local prev
+    for q = 1, 5 do
+        local cb = CreateFrame("CheckButton", nil, win, "UICheckButtonTemplate")
+        cb:SetSize(24, 24)
+        if prev then cb:SetPoint("LEFT", prev.label, "RIGHT", 10, 0) else cb:SetPoint("LEFT", ql, "RIGHT", 10, 0) end
+        cb.label = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        cb.label:SetPoint("LEFT", cb, "RIGHT", 0, 0)
+        cb.label:SetText(QualityName(q))
+        cb:SetScript("OnClick", function(self) filter.q[q] = self:GetChecked() and true or nil end)
+        qualChecks[q] = cb
+        prev = cb
+    end
 
     -- 내 직업(보고 있는 직업)이 착용 가능한 것만
     mineChk = CreateFrame("CheckButton", nil, win, "UICheckButtonTemplate")
-    mineChk:SetPoint("TOPLEFT", 16, -108)
+    mineChk:SetPoint("TOPLEFT", 16, -142)
     mineChk:SetSize(24, 24)
     local ml = mineChk:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     ml:SetPoint("LEFT", mineChk, "RIGHT", 2, 0)
     ml:SetText(L["착용 가능한 아이템만"])
-    mineChk:SetScript("OnClick", function(self) filter.mine = self:GetChecked() and true or false; Schedule(0.05) end)
+    mineChk:SetScript("OnClick", function(self) filter.mine = self:GetChecked() and true or false end)
+
+    searchBtn = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
+    searchBtn:SetSize(80, 22)
+    searchBtn:SetPoint("TOPRIGHT", -108, -142)
+    searchBtn:SetText(L["검색"])
+    searchBtn:SetScript("OnClick", function()
+        if running then StopSearch() else StartSearch() end
+    end)
 
     local reset = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
     reset:SetSize(80, 22)
-    reset:SetPoint("TOPRIGHT", -24, -108)
+    reset:SetPoint("TOPRIGHT", -24, -142)
     reset:SetText(L["초기화"])
     reset:SetScript("OnClick", function()
-        filter.text, filter.quality, filter.slot, filter.kind, filter.src, filter.mine = "", nil, nil, nil, nil, false
+        StopSearch()
+        filter.text, filter.q, filter.slot, filter.kind, filter.src, filter.mine = "", {}, nil, nil, nil, false
         nameBox:SetText(""); ns.SearchDefaultRange(); mineChk:SetChecked(false)
+        for _, cb in ipairs(qualChecks) do cb:SetChecked(false) end
         for _, d in ipairs(dropdowns) do d.Refresh() end
-        Schedule(0.05)
     end)
 
     countText = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    countText:SetPoint("TOPLEFT", 22, -140)
+    countText:SetPoint("TOPLEFT", 22, -172)
     noteText = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     noteText:SetPoint("LEFT", countText, "RIGHT", 10, 0)
 
@@ -397,7 +436,7 @@ local function Build()
     hint:SetText(L["Shift+클릭: 채팅창에 링크 / Ctrl+클릭: 미리보기"])
 
     local scroll = CreateFrame("ScrollFrame", "BestGearFinderSearchScroll", win, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 18, -158)
+    scroll:SetPoint("TOPLEFT", 18, -190)
     scroll:SetPoint("BOTTOMRIGHT", -36, 34)
     listChild = CreateFrame("Frame", nil, scroll)
     listChild:SetSize(W - 70, 1)
@@ -409,8 +448,8 @@ local function Build()
     end
     ns.SearchDefaultRange = DefaultRange
     DefaultRange()
-    win:SetScript("OnShow", function() for _, d in ipairs(dropdowns) do d.Refresh() end; Run() end)
-    win:SetScript("OnHide", function() for _, d in ipairs(dropdowns) do d.menu:Hide() end end)
+    win:SetScript("OnShow", function() for _, d in ipairs(dropdowns) do d.Refresh() end end)
+    win:SetScript("OnHide", function() StopSearch(); for _, d in ipairs(dropdowns) do d.menu:Hide() end end)
 end
 
 function ns:ToggleSearch()
@@ -424,5 +463,5 @@ function ns:SearchFor(text)
     win:Show()
     nameBox:SetText(text or "")
     filter.text = string.lower((text or ""):match("^%s*(.-)%s*$"))
-    Schedule(0.01)
+    StartSearch()
 end
