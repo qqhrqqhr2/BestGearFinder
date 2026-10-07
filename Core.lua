@@ -551,10 +551,12 @@ local function Request(id, prio)
     end
 end
 
--- 요구 레벨이 없는(0) 아이템은 어느 레벨에서든 착용할 수 있으므로 항상 범위 안으로 본다.
-local function InRange(req, minReq, maxReq)
-    if not req or req <= 0 then return true end
-    return req >= minReq and req <= maxReq
+-- 요구 레벨이 없는(0) 아이템은 하한 없이 포함하되, 아이템 레벨이 범위 상한보다 훨씬 높은 것은 제외한다
+-- (게임에 미리 들어 있는 높은 레벨 아이템이 요구 레벨 0으로 보이는 경우가 있음). BiS 목록의 아이템은 예외.
+local function InRange(req, minReq, maxReq, ilvl, isBis)
+    if req and req > 0 then return req >= minReq and req <= maxReq end
+    if isBis then return true end
+    return (ilvl or 0) <= maxReq + 10
 end
 
 -- BiS 목록 조회: 스펙 칸 si 에서 아이템 id 의 등급 (2 = 1순위, 1 = 대안, 0 = 목록에 없음)
@@ -578,6 +580,13 @@ local function BisLookup(si)
     end
     bisCache[si] = c
     return c
+end
+function ns:IsAnyBis(id)
+    for si = 1, #self:GetSpecList() do
+        local c = BisLookup(si)
+        if c.top[id] or c.alt[id] then return true end
+    end
+    return false
 end
 function ns:BisRank(si, id)
     local c = BisLookup(si)
@@ -615,7 +624,7 @@ function ns:Compute()
                 if dead[id] then skipped = skipped + 1 else pending = pending + 1 end
             else
                 ready = ready + 1
-                if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and not IsAbilityRelic(id, rec) and InRange(reqLevel, minReq, maxReq) then
+                if quality and db.qual[quality] and not (rec.new and IsJunkName(name)) and not IsAbilityRelic(id, rec) and InRange(reqLevel, minReq, maxReq, ilvl, ns:IsAnyBis(id)) then
                     local entry = { id = id, link = link, ilvl = ilvl or 0, req = reqLevel or 0, rec = rec, quality = quality }
                     for _, g in ipairs(locToGroups[rec.loc]) do
                         table.insert(buckets[g.key], entry)
@@ -1036,7 +1045,7 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         end
         P("sourceAllowed=" .. tostring(ns:SourceAllowed(rec)) .. " usable=" .. tostring(Usable(rec, rules, GetArmorType(rules, level), dw)))
         local name, _, quality, ilvl, req = GetItemInfoC(id)
-        P(("name=%s quality=%s ilvl=%s req=%s inRange=%s range=%d-%d"):format(tostring(name), tostring(quality), tostring(ilvl), tostring(req), tostring(name and InRange(req, minReq, maxReq)), minReq, maxReq))
+        P(("name=%s quality=%s ilvl=%s req=%s inRange=%s range=%d-%d"):format(tostring(name), tostring(quality), tostring(ilvl), tostring(req), tostring(name and InRange(req, minReq, maxReq, ilvl, ns:IsAnyBis(id))), minReq, maxReq))
         do
             local _, link = GetItemInfoC(id)
             local st = link and GetStats(link)
