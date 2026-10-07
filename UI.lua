@@ -421,15 +421,20 @@ local function BuildFrame()
     end
     ns.ApplyMainAlpha = ApplyAlpha
     ApplyAlpha(ns.db.mainAlpha or 0.85)
-    local sl = CreateFrame("Slider", "BestGearFinderMainAlpha", frame, "OptionsSliderTemplate")
+    local sl = CreateFrame("Slider", "BestGearFinderMainAlpha" .. ((ns.alphaSeq or 0) + 1), frame, "OptionsSliderTemplate")
     sl:SetPoint("TOPRIGHT", -60, -70)
     sl:SetSize(110, 14)
     sl:SetMinMaxValues(0.3, 1)
     sl:SetValueStep(0.05)
     if sl.SetObeyStepOnDrag then sl:SetObeyStepOnDrag(true) end
-    local slText = _G["BestGearFinderMainAlphaText"]
-    if slText then slText:SetText(L["투명도"]); slText:ClearAllPoints(); slText:SetPoint("RIGHT", sl, "LEFT", -6, 0) end
-    local slLow, slHigh = _G["BestGearFinderMainAlphaLow"], _G["BestGearFinderMainAlphaHigh"]
+    ns.alphaSeq = (ns.alphaSeq or 0) + 1
+    local sname = sl:GetName()
+    local slText = sname and _G[sname .. "Text"]
+    if slText then slText:SetText("") end
+    local slLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    slLabel:SetPoint("RIGHT", sl, "LEFT", -8, 0)
+    slLabel:SetText(L["투명도"])
+    local slLow, slHigh = sname and _G[sname .. "Low"], sname and _G[sname .. "High"]
     if slLow then slLow:SetText("") end
     if slHigh then slHigh:SetText("") end
     sl:SetValue(ns.db.mainAlpha or 0.85)
