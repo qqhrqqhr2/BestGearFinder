@@ -9,7 +9,7 @@
 - Ability-teaching rune relics and toy-like non-gear items are no longer listed.
 - Quest rewards are shown whether or not you have completed the quest.
 - Items that never load are given up on after 3 requests; faster item loading with your level range first; progress bar at the bottom while loading.
-- Fixed the list not scrolling to the bottom after raising the per-slot count.
+- Fixed the list not scrolling to the bottom after raising the per-slot count (scroll range is recalculated).
 
 ## 1.0.4
 - Progress bar at the bottom while item data is loading; the indexing message is gone.
