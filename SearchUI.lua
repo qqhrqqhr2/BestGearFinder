@@ -128,7 +128,7 @@ local function BuildTree()
         weapon.children[#weapon.children + 1] = { label = KindName(k[1], k[2]), c = k[1], s = k[2] }
     end
     local armor = { label = L["방어구"], c = 4, ss = { [1] = true, [2] = true, [3] = true, [4] = true }, children = {} }
-    local slotKeys = { "HEAD", "SHOULDER", "CLOAK", "CHEST", "WRIST", "HAND", "WAIST", "LEGS", "FEET" }
+    local slotKeys = { "HEAD", "SHOULDER", "CHEST", "WRIST", "HAND", "WAIST", "LEGS", "FEET" }
     for _, sid in ipairs({ 1, 2, 3, 4 }) do
         local n = { label = KindName(4, sid), c = 4, s = sid, children = {} }
         for _, key in ipairs(slotKeys) do n.children[#n.children + 1] = WithBase(GroupNode(key), 4, sid) end
@@ -138,7 +138,7 @@ local function BuildTree()
     for _, sid in ipairs({ 7, 8, 9 }) do
         top[#top + 1] = { label = KindName(4, sid), c = 4, s = sid }
     end
-    for _, key in ipairs({ "NECK", "FINGER", "TRINKET" }) do
+    for _, key in ipairs({ "CLOAK", "NECK", "FINGER", "TRINKET" }) do
         top[#top + 1] = WithBase(GroupNode(key), 4, nil)   -- 부위(loc)만 보고 방어구 하위 종류는 따지지 않음
     end
     top[#top + 1] = { label = L["보조 장비"], c = 4, locs = { INVTYPE_HOLDABLE = true } }
