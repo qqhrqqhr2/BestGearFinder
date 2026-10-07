@@ -563,7 +563,8 @@ local function EquippedIlvl(group)
 end
 
 local IsCached = C_Item and C_Item.IsItemDataCachedByID
-local function Request(id, prio)
+local Request
+function Request(id, prio)
     if dead[id] then return end
     local t = requested[id]
     if not t or GetTime() - t > 10 then
@@ -576,6 +577,10 @@ local function Request(id, prio)
     end
 end
 
+function ns:RequestItem(id) Request(id, true) end
+function ns:IsItemDead(id) return dead[id] and true or false end
+ns.GetItemInfoC = GetItemInfoC
+
 -- 요구 레벨이 없는(0) 아이템은 아이템 레벨이 범위 상한 -2 ~ +10 인 것만 포함한다(너무 낮은 퀘스트템/높은 선행 아이템 제외)
 -- (게임에 미리 들어 있는 높은 레벨 아이템이 요구 레벨 0으로 보이는 경우가 있음). BiS 목록의 아이템은 예외.
 local function InRange(req, minReq, maxReq, ilvl, isBis)
@@ -587,6 +592,16 @@ end
 
 -- BiS 목록 조회: 스펙 칸 si 에서 아이템 id 의 등급 (2 = 1순위, 1 = 대안, 0 = 목록에 없음)
 local bisCache = {}
+-- 현재 보고 있는 직업이 착용할 수 있는 아이템인지 (검색창용)
+function ns:UsableByActive(rec)
+    local rules = ns.CLASS_RULES[ns:ActiveClass()]
+    if not rules then return true end
+    local level = UnitLevel("player")
+    local class = ns:ActiveClass()
+    local dwOK = rules.dualWield and level >= (ns.DUAL_WIELD_LEVEL[class] or 99) or false
+    return Usable(rec, rules, GetArmorType(rules, level), dwOK)
+end
+
 function ns:SetViewClass(cls)
     local _, mine = UnitClass("player")
     if cls == mine then cls = nil end
@@ -1041,6 +1056,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
     elseif event == "GET_ITEM_INFO_RECEIVED" then
         if arg2 == false and requested[arg1] then dead[arg1] = true end   -- 서버가 '없음'이라고 답한 아이템
         if ns.frame and ns.frame:IsShown() and ns.stats.pending > 0 then ns:ScheduleRefresh(1.5) end
+        if ns.OnItemInfo then ns.OnItemInfo() end
     elseif event == "QUEST_TURNED_IN" then
         ns:ScheduleRefresh(0.8)
     elseif event == "QUEST_DATA_LOAD_RESULT" then
@@ -1062,7 +1078,10 @@ SLASH_BESTGEARFINDER2 = "/내템"
 SLASH_BESTGEARFINDER3 = "/bestgear"
 SlashCmdList["BESTGEARFINDER"] = function(msg)
     msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-    if msg == "debug" or msg == "diag" or msg == "진단" then
+    local q = msg:match("^find%s*(.*)$") or msg:match("^검색%s*(.*)$")
+    if q then
+        if ns.SearchFor then ns:SearchFor(q) end
+    elseif msg == "debug" or msg == "diag" or msg == "진단" then
         if ns.indexState == "done" and ns.frame then ns:Refresh(true) end
         Print(string.format(L["상태=%s, 모듈=%d, 보스=%d, 장비 아이템=%d(제작 %d, 퀘스트 %d), 후보=%d, 로딩완료=%d, 대기=%d"],
             ns.indexState, ns.indexStats.modules, ns.indexStats.bosses, ns.indexStats.items, ns.indexStats.craft or 0, ns.indexStats.quest or 0,

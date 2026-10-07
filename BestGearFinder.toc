@@ -22,4 +22,5 @@ DungeonData.lua
 BiSData.lua
 Core.lua
 UI.lua
+SearchUI.lua
 Launcher.lua
