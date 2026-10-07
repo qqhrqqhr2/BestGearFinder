@@ -643,7 +643,7 @@ function ns:UpdateUI()
                     r.link, r.rec, r.baseIlvl, r.score, r.baseScore, r.bis = e.link, e.rec, e.baseIlvl, e.score, e.baseScore, e.bis
                     r.icon:SetTexture(e.rec.icon)
                     local mark = e.upgrade and "|cff40ff40▲|r " or ""
-                    if e.bis == 2 then mark = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:12|t " .. mark end
+                    if e.bis == 2 then mark = "|cffffd100[BiS]|r " .. mark end
                     local ps = self:PrimarySource(e.rec)
                     if ps and ps.kind == "unknown" then mark = mark .. L["|cffff80ff[신규]|r "] end
                     if ps and ps.kind == "craft" then mark = mark .. L["|cff66ccff[제작]|r "] end
