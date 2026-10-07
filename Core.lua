@@ -537,7 +537,6 @@ function ns:Compute()
         local picks = {}
         for _, g in ipairs(ns.GROUPS) do
             local okSlot, errSlot = pcall(function()
-                if g.key == "OFF" and twoHanded then return end
                 local list = {}
                 for _, e in ipairs(buckets[g.key]) do
                     local score = sc[e.id]
@@ -906,6 +905,21 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         P("sourceAllowed=" .. tostring(ns:SourceAllowed(rec)) .. " usable=" .. tostring(Usable(rec, rules, GetArmorType(rules, level), dw)))
         local name, _, quality, ilvl, req = GetItemInfoC(id)
         P(("name=%s quality=%s ilvl=%s req=%s effReq=%s range=%d-%d"):format(tostring(name), tostring(quality), tostring(ilvl), tostring(req), tostring(name and EffReq(req, ilvl)), minReq, maxReq))
+        do
+            local _, link = GetItemInfoC(id)
+            local st = link and GetStats(link)
+            if type(st) == "table" then
+                local parts = {}
+                for k, v in pairs(st) do parts[#parts + 1] = k:gsub("^ITEM_MOD_", ""):gsub("_SHORT$", "") .. "=" .. tostring(v) end
+                table.sort(parts)
+                P("stats: " .. (#parts > 0 and table.concat(parts, ", ") or "(none)"))
+                for _, sp in ipairs(ns:GetSpecList()) do
+                    P(("score[%s]=%.1f"):format(sp.nameKo or sp.name, ScoreItem(link, ilvl, sp.w)))
+                end
+            else
+                P("stats: not available (" .. tostring(link and "no stats" or "not loaded") .. ")")
+            end
+        end
         P("qualityAllowed=" .. tostring(quality and db.qual[quality]) .. " junkName=" .. tostring(name and IsJunkName(name) and true or false))
         P(("abilityRelic=%s useLine=%s itemSpell=%s"):format(tostring(IsAbilityRelic(id, rec)), tostring(HasUseLine(id)), tostring(GetItemSpellC and select(1, GetItemSpellC(id)))))
     elseif msg == "reset" or msg == "초기화" then
