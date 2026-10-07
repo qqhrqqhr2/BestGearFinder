@@ -1,5 +1,16 @@
 # Changelog - Best Gear Finder
 
+## 1.0.5
+- New: [BiS] marker for the top pick on the level 30 BiS list (PvE, per wowf.io). BiS items are listed first in each slot, and an unworn BiS top pick is always shown.
+- Scores now include equip effects read from tooltips (spell power, healing, attack power, mana per 5 sec, defense) and weapon DPS for feral druids.
+- Tooltips show "Compared to equipped" with the biggest stat differences.
+- Off-hand items are always listed (they were hidden while wielding a two-hander).
+- Items with no level requirement are listed for any level range (capped by item level) and shown as "No req".
+- Ability-teaching rune relics and toy-like non-gear items are no longer listed.
+- Quest rewards are shown whether or not you have completed the quest.
+- Items that never load are given up on after 3 requests; faster item loading with your level range first; progress bar at the bottom while loading.
+- Fixed the list not scrolling to the bottom after raising the per-slot count.
+
 ## 1.0.4
 - Progress bar at the bottom while item data is loading; the indexing message is gone.
 - Quest rewards are now shown whether or not you have already completed the quest.
