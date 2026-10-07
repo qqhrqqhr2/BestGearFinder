@@ -70,9 +70,9 @@ local function CreateRow(i)
             GameTooltip:AddLine(L["현재 이 슬롯: 비어 있음"], 0.7, 0.7, 0.7)
         end
         if self.bis == 2 then
-            GameTooltip:AddLine(L["레벨 30 BiS 목록의 1순위 아이템입니다. (wowf.io 기준)"], 1, 0.82, 0)
+            GameTooltip:AddLine(L["레벨 30 BiS 목록의 1순위 아이템입니다."], 1, 0.82, 0)
         elseif self.bis == 1 then
-            GameTooltip:AddLine(L["레벨 30 BiS 목록에 있는 대안 아이템입니다. (wowf.io 기준)"], 0.9, 0.8, 0.4)
+            GameTooltip:AddLine(L["레벨 30 BiS 목록에 있는 대안 아이템입니다."], 0.9, 0.8, 0.4)
         end
         if self.weights and self.link and ns.StatDiffText then
             local okD, txt = pcall(ns.StatDiffText, self.link, self.baseLink, self.weights, 4)

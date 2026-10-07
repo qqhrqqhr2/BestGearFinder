@@ -7,7 +7,8 @@
 import re, json, sys, argparse, urllib.request
 from pathlib import Path
 
-BASE = "https://wowf.io/en"
+import os
+BASE = os.environ.get("DUNGEON_DATA_BASE", "")   # 데이터를 가져올 사이트 주소 (예: https://example.com/en)
 SLUGS = ["wailing-caverns", "blackfathom-deeps", "gnomeregan", "razorfen-kraul", "excavation-site", "ruins-of-lordaeron"]
 KO = {"Ruins Of Lordaeron": "Ruins of Lordaeron", "Excavation Site": "Excavation Site", "Wailing Caverns": "통곡의 동굴", "Blackfathom Deeps": "검은심연의 나락", "Gnomeregan": "놈리건", "Razorfen Kraul": "가시덩굴 우리"}
 

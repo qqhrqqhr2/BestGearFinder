@@ -1,7 +1,7 @@
 # Changelog - Best Gear Finder
 
 ## 1.0.5
-- New: [BiS] marker for the top pick on the level 30 BiS list (PvE, per wowf.io). BiS items are listed first in each slot, and an unworn BiS top pick is always shown.
+- New: [BiS] marker for the top pick on the level 30 BiS list (PvE). BiS items are listed first in each slot, and an unworn BiS top pick is always shown.
 - Scores now include equip effects read from tooltips (spell power, healing, attack power, mana per 5 sec, defense) and weapon DPS for feral druids.
 - Tooltips show "Compared to equipped" with the biggest stat differences.
 - Off-hand items are always listed (they were hidden while wielding a two-hander).

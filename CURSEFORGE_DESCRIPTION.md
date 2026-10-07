@@ -13,7 +13,7 @@ Open the window and see, slot by slot, the best items you can equip at your leve
 - Tooltips show the **source** (dungeon, boss, quest, profession) and the **drop chance**
 - Numeric **required-level range** (e.g. 20-35) plus a Search button to refresh after you change gear
 - **Upgrades only** mode compares against what you have equipped
-- **[BiS] marker** for the top pick on the level 30 BiS list (PvE, per wowf.io); BiS items are listed first, and tooltips show how the item differs from what you wear
+- **[BiS] marker** for the top pick on the level 30 BiS list (PvE); BiS items are listed first, and tooltips show how the item differs from what you wear
 - **New Forever items** that are not in the Classic database are found in the game client and marked [New] (source unknown)
 - A draggable on-screen icon opens the window with one click
 - Choose how many items to show per slot (2-10) from a dropdown
@@ -46,7 +46,7 @@ All item, loot, crafting, quest and vendor data is generated offline from the CM
 - 툴팁에 **획득처**(던전, 보스, 퀘스트, 전문기술)와 **드랍률** 표시
 - **요구 레벨 범위**를 숫자로 입력(예: 20-35), 장비를 바꾼 뒤에는 검색 버튼으로 새로고침
 - **업그레이드만** 보기: 현재 착용 장비와 비교
-- 레벨 30 BiS 목록(PvE, wowf.io 기준)의 1순위에 **[BiS]** 표시, BiS 아이템을 먼저 보여주고 툴팁에 현재 장비와의 차이를 표시
+- 레벨 30 BiS 목록(PvE)의 1순위에 **[BiS]** 표시, BiS 아이템을 먼저 보여주고 툴팁에 현재 장비와의 차이를 표시
 - 슬롯당 표시 개수(2~10)를 드롭다운으로 선택
 - 슬롯 제목을 눌러 접기, 오른쪽 아래 모서리로 높이 조절, Shift+클릭으로 채팅창에 링크
 - "출처가 확인된 것만" 필터로 출처 불명 아이템 숨기기
@@ -71,4 +71,4 @@ All item, loot, crafting, quest and vendor data is generated offline from the CM
 If this saves you time, you can buy me a coffee: https://buymeacoffee.com/qqhrqqhr2
 도움이 되셨다면 커피 한 잔으로 응원해 주세요: https://buymeacoffee.com/qqhrqqhr2
 
-Level 30 BiS lists: wowf.io. GPL-3.0. World of Warcraft is a trademark of Blizzard Entertainment; this addon is not affiliated with Blizzard or CMaNGOS.
+GPL-3.0. World of Warcraft is a trademark of Blizzard Entertainment; this addon is not affiliated with Blizzard or CMaNGOS.
