@@ -551,12 +551,13 @@ local function Request(id, prio)
     end
 end
 
--- 요구 레벨이 없는(0) 아이템은 하한 없이 포함하되, 아이템 레벨이 범위 상한보다 훨씬 높은 것은 제외한다
+-- 요구 레벨이 없는(0) 아이템은 아이템 레벨이 범위 상한 -2 ~ +10 인 것만 포함한다(너무 낮은 퀘스트템/높은 선행 아이템 제외)
 -- (게임에 미리 들어 있는 높은 레벨 아이템이 요구 레벨 0으로 보이는 경우가 있음). BiS 목록의 아이템은 예외.
 local function InRange(req, minReq, maxReq, ilvl, isBis)
     if req and req > 0 then return req >= minReq and req <= maxReq end
     if isBis then return true end
-    return (ilvl or 0) <= maxReq + 10
+    local lv = ilvl or 0
+    return lv <= maxReq + 10 and lv >= maxReq - 2   -- 요구 레벨 없는 아이템: 현재 상한 근처의 아이템 레벨만
 end
 
 -- BiS 목록 조회: 스펙 칸 si 에서 아이템 id 의 등급 (2 = 1순위, 1 = 대안, 0 = 목록에 없음)
