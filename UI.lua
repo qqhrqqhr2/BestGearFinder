@@ -66,6 +66,11 @@ local function CreateRow(i)
         else
             GameTooltip:AddLine(L["현재 이 슬롯: 비어 있음"], 0.7, 0.7, 0.7)
         end
+        if self.bis == 2 then
+            GameTooltip:AddLine(L["레벨 30 BiS 목록의 1순위 아이템입니다. (wowf.io 기준)"], 1, 0.82, 0)
+        elseif self.bis == 1 then
+            GameTooltip:AddLine(L["레벨 30 BiS 목록에 있는 대안 아이템입니다. (wowf.io 기준)"], 0.9, 0.8, 0.4)
+        end
         if self.score then
             GameTooltip:AddLine(format(L["추정 점수: 이 아이템 %.1f / 착용 중 %.1f"], self.score, self.baseScore or 0), 0.6, 0.9, 0.6)
         end
@@ -635,9 +640,10 @@ function ns:UpdateUI()
                     r:SetSize(colW - 6, ROW_H)
                     r:ClearAllPoints()
                     r:SetPoint("TOPLEFT", child, "TOPLEFT", (si - 1) * colW + 2, -(y + (n - 1) * ROW_H))
-                    r.link, r.rec, r.baseIlvl, r.score, r.baseScore = e.link, e.rec, e.baseIlvl, e.score, e.baseScore
+                    r.link, r.rec, r.baseIlvl, r.score, r.baseScore, r.bis = e.link, e.rec, e.baseIlvl, e.score, e.baseScore, e.bis
                     r.icon:SetTexture(e.rec.icon)
                     local mark = e.upgrade and "|cff40ff40▲|r " or ""
+                    if e.bis == 2 then mark = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:12|t " .. mark end
                     local ps = self:PrimarySource(e.rec)
                     if ps and ps.kind == "unknown" then mark = mark .. L["|cffff80ff[신규]|r "] end
                     if ps and ps.kind == "craft" then mark = mark .. L["|cff66ccff[제작]|r "] end

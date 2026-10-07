@@ -465,6 +465,33 @@ local function EffReq(req, ilvl)
     return math.max(1, math.min(ilvl or 1, 60))
 end
 
+-- BiS 목록 조회: 스펙 칸 si 에서 아이템 id 의 등급 (2 = 1순위, 1 = 대안, 0 = 목록에 없음)
+local bisCache = {}
+local function BisLookup(si)
+    local c = bisCache[si]
+    if c then return c end
+    c = { top = {}, alt = {} }
+    local _, class = UnitClass("player")
+    local data = ns.BiS and ns.BiS[class]
+    local names = ns.BIS_MAP and ns.BIS_MAP[class] and ns.BIS_MAP[class][si]
+    if data and names then
+        local side = (UnitFactionGroup and UnitFactionGroup("player") == "Horde") and "H" or "A"
+        for _, nm in ipairs(names) do
+            local t = data[nm] and (data[nm][side] or data[nm].A or data[nm].H)
+            if t then
+                for _, id in ipairs(t.top) do c.top[id] = true end
+                for _, id in ipairs(t.alt) do c.alt[id] = true end
+            end
+        end
+    end
+    bisCache[si] = c
+    return c
+end
+function ns:BisRank(si, id)
+    local c = BisLookup(si)
+    return c.top[id] and 2 or (c.alt[id] and 1 or 0)
+end
+
 function ns:Compute()
     local _, class = UnitClass("player")
     local rules = ns.CLASS_RULES[class]
@@ -544,9 +571,10 @@ function ns:Compute()
                         score = ScoreItem(e.link, e.ilvl, weights)
                         sc[e.id] = score
                     end
-                    list[#list + 1] = { e = e, score = score }
+                    list[#list + 1] = { e = e, score = score, bis = ns:BisRank(si, e.id) }
                 end
                 table.sort(list, function(a, b)
+                    if a.bis ~= b.bis then return a.bis > b.bis end
                     if a.score ~= b.score then return a.score > b.score end
                     return a.e.id < b.e.id
                 end)
@@ -554,14 +582,24 @@ function ns:Compute()
                 if si == 1 then self.funnel = self.funnel or {}; self.funnel[g.key] = { cand = #list, base = base, top = list[1] and list[1].score or 0, topId = list[1] and list[1].e.id } end
                 local baseIlvl = EquippedIlvl(g)
                 local picked = {}
+                -- 이미 착용 중인 아이템 (BiS 인데 이미 끼고 있으면 업그레이드가 아님)
+                local worn = {}
+                for _, invSlot in ipairs(g.inv) do
+                    local wid = GetInventoryItemID and GetInventoryItemID("player", invSlot)
+                    if wid then worn[wid] = true end
+                end
                 for _, w in ipairs(list) do
                     local isUpgrade = w.score > base * (1 + ns.UPGRADE_MARGIN_PCT) + ns.UPGRADE_MARGIN_ABS
-                    if db.upgradeOnly and not isUpgrade then break end
-                    local e = w.e
-                    if not db.classFilter or IsClassAllowed(e.id) ~= false then
-                        picked[#picked + 1] = { id = e.id, link = e.link, ilvl = e.ilvl, req = e.req, rec = e.rec,
-                            quality = e.quality, score = w.score, upgrade = isUpgrade, baseIlvl = baseIlvl, baseScore = base }
-                        if #picked >= perSlot then break end
+                    -- BiS 1순위는 점수와 무관하게 아직 착용하지 않았다면 항상 표시
+                    if w.bis == 2 and not worn[w.e.id] then isUpgrade = true end
+                    if (not db.upgradeOnly or isUpgrade) and not (w.bis == 2 and worn[w.e.id]) then
+                        local e = w.e
+                        if not db.classFilter or IsClassAllowed(e.id) ~= false then
+                            picked[#picked + 1] = { id = e.id, link = e.link, ilvl = e.ilvl, req = e.req, rec = e.rec,
+                                quality = e.quality, score = w.score, upgrade = isUpgrade, baseIlvl = baseIlvl, baseScore = base,
+                                bis = w.bis }
+                            if #picked >= perSlot then break end
+                        end
                     end
                 end
                 if #picked > 1 then
@@ -569,7 +607,9 @@ function ns:Compute()
                     local known, unknown = {}, {}
                     for _, pk in ipairs(picked) do
                         local ps = ns:PrimarySource(pk.rec)
-                        if ps and ps.kind == "unknown" then
+                        if pk.bis == 2 then
+                            known[#known + 1] = pk
+                        elseif ps and ps.kind == "unknown" then
                             unknown[#unknown + 1] = pk
                         else
                             known[#known + 1] = pk

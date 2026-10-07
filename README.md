@@ -16,6 +16,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **요구 레벨**: 입력칸에 범위(예: 20~35)를 쓰고 `검색`. `자동(현재-10)` 은 현재 레벨 -10 ~ 현재 레벨로 되돌립니다.
 - **필터 ▼** 메뉴: 제작템, 퀘스트 보상, 월드 드랍(저확률), 업그레이드만, 몹 레벨 제한, 다른 직업 전용 숨김, 아이템 등급.
 - **슬롯 제목 클릭**: 그 슬롯을 접거나 펼칩니다. 창 오른쪽 아래 모서리를 끌면 높이를 조절할 수 있고 저장됩니다.
+- **★ 표시**: 레벨 30 BiS 목록의 1순위 아이템입니다. BiS 목록에 있는 아이템은 점수보다 먼저 나오며, 마우스를 올리면 1순위인지 대안인지 표시됩니다. (BiS 목록은 wowf.io 의 레벨 30 PvE 기준)
 - **아이템 클릭**: Shift+클릭은 채팅창에 아이템 링크 넣기, Ctrl+클릭은 착용 미리보기입니다.
 - **하단 상태줄**: 확인된 아이템 수를 보여줍니다. 게임에 없는 아이템은 "제외"로 표시되며, 마우스를 올리면 자세한 설명이 나옵니다.
 - 필터의 **출처가 확인된 것만**: 출처 불명(신규) 아이템과 저확률 월드 드랍을 숨깁니다. 신규 아이템은 항상 출처가 확인된 아이템 아래에 나옵니다.
@@ -64,6 +65,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **Required level**: type a range (e.g. 20-35) and press `Search`. `Auto (Lv-10)` resets to your level -10 ~ your level.
 - **Filters ▼** menu: crafting, quest rewards, world drops (low chance), upgrades only, mob level limit, hide other-class items, item quality.
 - **Click a slot title** to collapse / expand it. Drag the bottom-right corner to resize the height (saved).
+- **Star marker**: the top pick on the level 30 BiS list (PvE, per wowf.io). Items on the BiS list are shown before the rest; hover to see whether it is the top pick or an alternative.
 - **Click an item**: Shift+click inserts its link into chat, Ctrl+click opens the dressing-room preview.
 - **Status line** (bottom): shows how many items were found. Items that do not exist in this game version are reported as skipped; hover for details.
 - Filter option **Known sources only** hides unknown-source [New] items and low-chance world drops. [New] items are always listed below items with known sources.
@@ -115,3 +117,4 @@ Support: https://buymeacoffee.com/qqhrqqhr2
 
 ## Credits / Licenses
 - Item and loot data: CMaNGOS classic-db (GPL-3.0).
+- Level 30 BiS lists (PvE): curated by wowf.io, bundled as item IDs for the BiS marker.

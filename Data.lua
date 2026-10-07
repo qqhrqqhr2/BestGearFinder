@@ -121,6 +121,19 @@ ns.SPECS = {
     },
 }
 
+-- 각 직업의 스펙 칸(위 SPECS 순서) -> BiS 목록(BiSData.lua)의 스펙 이름들
+ns.BIS_MAP = {
+    WARRIOR = { { "arms", "fury" }, { "protection" } },
+    PALADIN = { { "retribution" }, { "holy" }, { "protection" } },
+    HUNTER  = { { "beast-mastery", "marksmanship" } },
+    ROGUE   = { { "assassination", "combat", "subtlety" } },
+    PRIEST  = { { "holy", "discipline" }, { "shadow" } },
+    SHAMAN  = { { "elemental" }, { "enhancement" }, {} },
+    MAGE    = { { "arcane", "fire", "frost" } },
+    WARLOCK = { { "affliction", "demonology", "destruction" } },
+    DRUID   = { { "balance" }, { "feral-dps" }, { "feral-tank" }, { "restoration" } },
+}
+
 -- 아이템 레벨 가중치: 스탯이 거의 없는 아이템 구분/동점 처리용 보조점수 (스탯보다 작게 유지)
 ns.ILVL_WEIGHT = 0.15
 
