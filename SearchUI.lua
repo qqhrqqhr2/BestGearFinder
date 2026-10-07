@@ -8,11 +8,11 @@ local ROW_H, MAX_ROWS = 22, 150
 local win, listChild, countText, noteText, nameBox, minBox, maxBox, mineChk
 local rows = {}
 local CatMatch
-local filter = { text = "", noReq = true, q = {}, src = {}, mine = false, cat = nil }
+local filter = { text = "", noReq = true, q = {}, src = {}, mine = false, cat = nil, catKey = nil }
 -- 기본값: 고급·희귀, 획득처 전체, 레벨 제한 없음 포함
 local function ApplyDefaults()
     filter.text, filter.mine, filter.noReq = "", false, true
-    filter.cat = nil
+    filter.cat, filter.catKey = nil, nil
     for _, set in ipairs({ filter.q, filter.src }) do wipe(set) end
     filter.q[2], filter.q[3] = true, true
     for _, k in ipairs({ "drop", "quest", "craft", "vendor", "unknown" }) do filter.src[k] = true end
@@ -25,6 +25,7 @@ local lastPending, lastChange = -1, 0
 local refreshQueued = false
 local searchBtn, qualChecks, noReqChk = nil, {}, nil
 local bar
+local expanded = {}   -- 분류 트리에서 펼친 항목 (창을 다시 만들어도 유지)
 
 local ARMOR_KINDS = { { 4, 1 }, { 4, 2 }, { 4, 3 }, { 4, 4 }, { 4, 6 }, { 4, 0 }, { 4, 7 }, { 4, 8 }, { 4, 9 } }
 local WEAPON_KINDS = { { 2, 0 }, { 2, 1 }, { 2, 4 }, { 2, 5 }, { 2, 7 }, { 2, 8 }, { 2, 15 }, { 2, 13 }, { 2, 6 }, { 2, 10 },
@@ -441,6 +442,7 @@ local function Build()
     local ml = mineChk:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     ml:SetPoint("LEFT", mineChk, "RIGHT", 2, 0)
     ml:SetText(L["착용 가능한 아이템만"])
+    mineChk:SetChecked(filter.mine)
     mineChk:SetScript("OnClick", function(self) filter.mine = self:GetChecked() and true or false end)
 
     searchBtn = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
@@ -496,7 +498,15 @@ local function Build()
     tchild:SetSize(TREE_W - 4, 1)
     tscroll:SetScrollChild(tchild)
     TREE = BuildTree()
-    local expanded = {}
+    -- 언어를 바꿔 창을 다시 만들 때, 이전에 고른 분류를 같은 위치에서 다시 찾는다
+    if filter.catKey then
+        local list, node = TREE, nil
+        for idx in filter.catKey:gmatch("/(%d+)") do
+            node = list and list[tonumber(idx)]
+            list = node and node.children
+        end
+        filter.cat = node
+    end
     local trows = {}
     local flat
 
@@ -536,7 +546,7 @@ local function Build()
             b.sel:SetShown(filter.cat == n)
             b:SetScript("OnClick", function()
                 if n and n.children then expanded[f.key] = not expanded[f.key] end
-                filter.cat = n
+                filter.cat, filter.catKey = n, (n and f.key or nil)
                 treeRefresh()
             end)
             b:Show()
@@ -561,6 +571,24 @@ local function Build()
     ns.SearchDefaultRange = DefaultRange
     DefaultRange()
     win:SetScript("OnHide", function() StopSearch() end)
+end
+
+-- 언어가 바뀌면 검색창도 새 언어로 다시 만든다 (입력값과 선택은 유지)
+function ns:RebuildSearch()
+    if not win then return end
+    local wasShown = win:IsShown()
+    local nameT, minT, maxT = nameBox:GetText(), minBox:GetText(), maxBox:GetText()
+    StopSearch()
+    win:Hide()
+    win:ClearAllPoints()
+    for i = #UISpecialFrames, 1, -1 do
+        if UISpecialFrames[i] == "BestGearFinderSearchFrame" then table.remove(UISpecialFrames, i) end
+    end
+    wipe(rows)
+    win, listChild, countText, noteText, nameBox, minBox, maxBox, mineChk, searchBtn, noReqChk, bar = nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
+    Build()
+    nameBox:SetText(nameT or ""); minBox:SetText(minT or ""); maxBox:SetText(maxT or "")
+    if wasShown then win:Show() end
 end
 
 function ns:ToggleSearch()

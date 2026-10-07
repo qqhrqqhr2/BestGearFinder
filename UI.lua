@@ -772,6 +772,7 @@ function ns:RebuildUI()
     chanceEdit, aucChk, frame, ns.frame = nil, nil, nil, nil
     BuildFrame()
     if wasShown then frame:Show() end
+    if ns.RebuildSearch then ns:RebuildSearch() end
 end
 
 function ns:Toggle()
