@@ -3,15 +3,17 @@
 local ADDON, ns = ...
 local L = ns.L
 
-local W, H = 700, 780
+local W, H = 780, 640
 local ROW_H, MAX_ROWS = 22, 150
 local win, listChild, countText, noteText, nameBox, minBox, maxBox, mineChk
 local rows = {}
-local filter = { text = "", noReq = true, q = {}, slot = {}, kind = {}, src = {}, mine = false }
+local CatMatch
+local filter = { text = "", noReq = true, q = {}, src = {}, mine = false, cat = nil }
 -- 기본값: 고급·희귀, 획득처 전체, 레벨 제한 없음 포함
 local function ApplyDefaults()
     filter.text, filter.mine, filter.noReq = "", false, true
-    for _, set in ipairs({ filter.q, filter.slot, filter.kind, filter.src }) do wipe(set) end
+    filter.cat = nil
+    for _, set in ipairs({ filter.q, filter.src }) do wipe(set) end
     filter.q[2], filter.q[3] = true, true
     for _, k in ipairs({ "drop", "quest", "craft", "vendor", "unknown" }) do filter.src[k] = true end
 end
@@ -77,12 +79,12 @@ local function GetRow(i)
     r.icon:SetPoint("LEFT", 2, 0)
     r.name = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     r.name:SetPoint("LEFT", r.icon, "RIGHT", 4, 0)
-    r.name:SetWidth(210)
+    r.name:SetWidth(190)
     r.name:SetJustifyH("LEFT")
     r.name:SetWordWrap(false)
     r.info = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     r.info:SetPoint("LEFT", r.name, "RIGHT", 4, 0)
-    r.info:SetWidth(170)
+    r.info:SetWidth(150)
     r.info:SetJustifyH("LEFT")
     r.info:SetWordWrap(false)
     r.src = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -106,6 +108,50 @@ local function GetRow(i)
     return r
 end
 
+------------------------------------------------------------------------
+-- 경매장 식 분류 트리: 무기 / 방어구(천·가죽·사슬·판금 → 부위, 기타 → 목걸이·반지·장신구…) / 방패 / 성물
+------------------------------------------------------------------------
+local function GroupNode(key)
+    for _, g in ipairs(ns.GROUPS) do
+        if g.key == key then return { label = g.label, locs = g.locs } end
+    end
+    return { label = key }
+end
+local function WithBase(node, c, s)
+    node.c, node.s = c, s
+    return node
+end
+local TREE
+local function BuildTree()
+    local weapon = { label = L["무기"], c = 2, children = {} }
+    for _, k in ipairs(WEAPON_KINDS) do
+        weapon.children[#weapon.children + 1] = { label = KindName(k[1], k[2]), c = k[1], s = k[2] }
+    end
+    local armor = { label = L["방어구"], c = 4, children = {} }
+    local slotKeys = { "HEAD", "SHOULDER", "CLOAK", "CHEST", "WRIST", "HAND", "WAIST", "LEGS", "FEET" }
+    for _, sid in ipairs({ 1, 2, 3, 4 }) do
+        local n = { label = KindName(4, sid), c = 4, s = sid, children = {} }
+        for _, key in ipairs(slotKeys) do n.children[#n.children + 1] = WithBase(GroupNode(key), 4, sid) end
+        armor.children[#armor.children + 1] = n
+    end
+    local misc = { label = L["기타 (목걸이/반지/장신구)"], c = 4, s = 0, children = {} }
+    for _, key in ipairs({ "NECK", "FINGER", "TRINKET" }) do misc.children[#misc.children + 1] = WithBase(GroupNode(key), 4, 0) end
+    misc.children[#misc.children + 1] = { label = L["보조 장비"], c = 4, s = 0, locs = { INVTYPE_HOLDABLE = true } }
+    armor.children[#armor.children + 1] = misc
+    armor.children[#armor.children + 1] = { label = KindName(4, 6), c = 4, s = 6 }
+    for _, sid in ipairs({ 7, 8, 9 }) do
+        armor.children[#armor.children + 1] = { label = KindName(4, sid), c = 4, s = sid }
+    end
+    return { weapon, armor }
+end
+
+CatMatch = function(node, rec)
+    if node.c and rec.classID ~= node.c then return false end
+    if node.s and rec.subID ~= node.s then return false end
+    if node.locs and not node.locs[rec.loc] then return false end
+    return true
+end
+
 local function SrcMatch(rec, set)
     if next(set) == nil then return true end
     for key in pairs(set) do
@@ -120,7 +166,7 @@ end
 
 local function HasQuality() return next(filter.q) ~= nil end
 local function HasFilter(minL, maxL)
-    return filter.text ~= "" or HasQuality() or next(filter.slot) or next(filter.kind) or next(filter.src) or minL or maxL
+    return filter.text ~= "" or HasQuality() or filter.cat or next(filter.src) or minL or maxL
 end
 local function SetRunning(v)
     running = v
@@ -161,8 +207,7 @@ function Run()
     for id, rec in pairs(ns.index) do
         if rec and ns:IsItemDead(id) == false then
             local ok = true
-            if next(filter.slot) and not filter.slot[locToGroup[rec.loc]] then ok = false end
-            if ok and next(filter.kind) and not filter.kind[rec.classID .. ":" .. rec.subID] then ok = false end
+            if filter.cat and not CatMatch(filter.cat, rec) then ok = false end
             if ok and not SrcMatch(rec, filter.src) then ok = false end
             if ok and filter.mine and not ns:UsableByActive(rec) then ok = false end
             if ok then
@@ -290,8 +335,7 @@ local function Build()
     nameBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
     nameBox:SetScript("OnEnterPressed", function(self) self:ClearFocus(); StartSearch() end)
     nameBox:SetScript("OnTextChanged", function(self)
-        local t = string.lower((self:GetText() or ""):match("^%s*(.-)%s*$"))
-        filter.text = t
+        filter.text = string.lower((self:GetText() or ""):match("^%s*(.-)%s*$"))
     end)
 
     -- 요구 레벨 범위
@@ -324,55 +368,38 @@ local function Build()
     noReqChk:SetChecked(filter.noReq)
     noReqChk:SetScript("OnClick", function(self) filter.noReq = self:GetChecked() and true or false end)
 
-    -- 체크박스 묶음 (아무것도 안 고르면 전체)
+    -- 체크박스 묶음 (등급 / 획득처): 아무것도 안 고르면 전체
     local checkLists = {}
     local y = -80
-    local PER_ROW = 5
-    local CELL = math.floor((W - 110) / PER_ROW)
-    local function MakeChecks(title, entries, set, colorFn)
-        local tl = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        tl:SetPoint("TOPLEFT", 22, y - 6)
-        tl:SetText(title)
+    local CELL = 112
+    local function MakeChecks(title, entries, set)
+        local tx = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        tx:SetPoint("TOPLEFT", 22, y - 5)
+        tx:SetText(title)
         for idx, e in ipairs(entries) do
-            local col, row = (idx - 1) % PER_ROW, math.floor((idx - 1) / PER_ROW)
             local cb = CreateFrame("CheckButton", nil, win, "UICheckButtonTemplate")
             cb:SetSize(22, 22)
-            cb:SetPoint("TOPLEFT", 78 + col * CELL, y - row * 22)
+            cb:SetPoint("TOPLEFT", 78 + (idx - 1) * CELL, y)
             cb.label = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             cb.label:SetPoint("LEFT", cb, "RIGHT", 0, 0)
-            cb.label:SetWidth(CELL - 26)
-            cb.label:SetJustifyH("LEFT")
-            cb.label:SetWordWrap(false)
             cb.label:SetText(e.label)
             cb:SetChecked(set[e.key] and true or false)
             cb:SetScript("OnClick", function(self) set[e.key] = self:GetChecked() and true or nil end)
             checkLists[#checkLists + 1] = { cb = cb, set = set, key = e.key }
         end
-        y = y - math.ceil(#entries / PER_ROW) * 22 - 6
+        y = y - 26
     end
-
     local qEntries = {}
     for q = 1, 5 do qEntries[#qEntries + 1] = { key = q, label = QualityName(q) } end
     MakeChecks(L["등급"], qEntries, filter.q)
-
-    local slotEntries = {}
-    for _, g in ipairs(ns.GROUPS) do slotEntries[#slotEntries + 1] = { key = g.key, label = g.label } end
-    MakeChecks(L["부위"], slotEntries, filter.slot)
-
-    local armorEntries, weaponEntries = {}, {}
-    for _, k in ipairs(ARMOR_KINDS) do armorEntries[#armorEntries + 1] = { key = k[1] .. ":" .. k[2], label = KindName(k[1], k[2]) } end
-    for _, k in ipairs(WEAPON_KINDS) do weaponEntries[#weaponEntries + 1] = { key = k[1] .. ":" .. k[2], label = KindName(k[1], k[2]) } end
-    MakeChecks(L["방어구"], armorEntries, filter.kind)
-    MakeChecks(L["무기"], weaponEntries, filter.kind)
-
     MakeChecks(L["획득처"], {
         { key = "drop", label = L["드랍"] }, { key = "quest", label = L["퀘스트"] }, { key = "craft", label = L["제작"] },
         { key = "vendor", label = L["상점"] }, { key = "unknown", label = L["출처 불명"] },
     }, filter.src)
 
-    -- 내 직업(보고 있는 직업)이 착용 가능한 것만
+    -- 착용 가능만 / 검색 / 초기화
     mineChk = CreateFrame("CheckButton", nil, win, "UICheckButtonTemplate")
-    mineChk:SetPoint("TOPLEFT", 16, y - 4)
+    mineChk:SetPoint("TOPLEFT", 16, y - 2)
     mineChk:SetSize(24, 24)
     local ml = mineChk:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     ml:SetPoint("LEFT", mineChk, "RIGHT", 2, 0)
@@ -381,38 +408,102 @@ local function Build()
 
     searchBtn = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
     searchBtn:SetSize(80, 22)
-    searchBtn:SetPoint("TOPRIGHT", -108, y - 4)
+    searchBtn:SetPoint("TOPRIGHT", -108, y - 2)
     searchBtn:SetText(L["검색"])
     searchBtn:SetScript("OnClick", function()
         if running then StopSearch() else StartSearch() end
     end)
 
+    local treeRefresh
     local reset = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
     reset:SetSize(80, 22)
-    reset:SetPoint("TOPRIGHT", -24, y - 4)
+    reset:SetPoint("TOPRIGHT", -24, y - 2)
     reset:SetText(L["초기화"])
     reset:SetScript("OnClick", function()
         StopSearch()
         ApplyDefaults()
         nameBox:SetText(""); ns.SearchDefaultRange(); mineChk:SetChecked(false); noReqChk:SetChecked(true)
         for _, c in ipairs(checkLists) do c.cb:SetChecked(c.set[c.key] and true or false) end
+        treeRefresh()
     end)
-    y = y - 34
+    y = y - 32
 
     countText = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     countText:SetPoint("TOPLEFT", 22, y)
     noteText = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     noteText:SetPoint("LEFT", countText, "RIGHT", 10, 0)
+    y = y - 18
 
     local hint = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     hint:SetPoint("BOTTOMLEFT", 22, 16)
     hint:SetText(L["Shift+클릭: 채팅창에 링크 / Ctrl+클릭: 미리보기"])
 
+    -- 왼쪽: 경매장 식 분류 트리
+    local TREE_W = 190
+    local tscroll = CreateFrame("ScrollFrame", "BestGearFinderSearchTree", win, "UIPanelScrollFrameTemplate")
+    tscroll:SetPoint("TOPLEFT", 18, y)
+    tscroll:SetPoint("BOTTOMLEFT", 18, 34)
+    tscroll:SetWidth(TREE_W)
+    local tchild = CreateFrame("Frame", nil, tscroll)
+    tchild:SetSize(TREE_W - 4, 1)
+    tscroll:SetScrollChild(tchild)
+    TREE = BuildTree()
+    local expanded = {}
+    local trows = {}
+    local flat
+
+    local function Flatten(list, depth, prefix, out)
+        for i, n in ipairs(list) do
+            local key = prefix .. "/" .. i
+            out[#out + 1] = { node = n, depth = depth, key = key }
+            if n.children and expanded[key] then Flatten(n.children, depth + 1, key, out) end
+        end
+    end
+    function treeRefresh()
+        flat = { { node = nil, depth = 0, key = "all", label = L["전체"] } }
+        Flatten(TREE, 0, "", flat)
+        for i, f in ipairs(flat) do
+            local b = trows[i]
+            if not b then
+                b = CreateFrame("Button", nil, tchild)
+                b:SetHeight(20)
+                b:SetPoint("TOPLEFT", 0, -(i - 1) * 20)
+                b:SetPoint("TOPRIGHT", 0, -(i - 1) * 20)
+                b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+                b.sel = b:CreateTexture(nil, "BACKGROUND")
+                b.sel:SetAllPoints()
+                b.sel:SetColorTexture(0.2, 0.45, 0.9, 0.35)
+                b.t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                b.t:SetJustifyH("LEFT")
+                b.t:SetWordWrap(false)
+                trows[i] = b
+            end
+            b.t:ClearAllPoints()
+            b.t:SetPoint("LEFT", 4 + f.depth * 12, 0)
+            b.t:SetPoint("RIGHT", -2, 0)
+            local n = f.node
+            local label = f.label or n.label
+            if n and n.children then label = (expanded[f.key] and "- " or "+ ") .. label end
+            b.t:SetText(label)
+            b.sel:SetShown(filter.cat == n)
+            b:SetScript("OnClick", function()
+                if n and n.children then expanded[f.key] = not expanded[f.key] end
+                filter.cat = n
+                treeRefresh()
+            end)
+            b:Show()
+        end
+        for i = #flat + 1, #trows do trows[i]:Hide() end
+        tchild:SetHeight(math.max(1, #flat * 20))
+    end
+    treeRefresh()
+
+    -- 오른쪽: 검색 결과
     local scroll = CreateFrame("ScrollFrame", "BestGearFinderSearchScroll", win, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 18, y - 18)
+    scroll:SetPoint("TOPLEFT", 18 + TREE_W + 26, y)
     scroll:SetPoint("BOTTOMRIGHT", -36, 34)
     listChild = CreateFrame("Frame", nil, scroll)
-    listChild:SetSize(W - 70, 1)
+    listChild:SetSize(W - TREE_W - 90, 1)
     scroll:SetScrollChild(listChild)
 
     local function DefaultRange()
@@ -421,7 +512,7 @@ local function Build()
     end
     ns.SearchDefaultRange = DefaultRange
     DefaultRange()
-        win:SetScript("OnHide", function() StopSearch() end)
+    win:SetScript("OnHide", function() StopSearch() end)
 end
 
 function ns:ToggleSearch()

@@ -54,6 +54,7 @@ local en = {
     ["개"] = "",
     ["아이템 검색"] = "Item search",
     ["방어구"] = "Armor",
+    ["기타 (목걸이/반지/장신구)"] = "Misc (neck / ring / trinket)",
     ["무기"] = "Weapon",
     ["중지"] = "Stop",
     ["레벨 제한 없음 포함"] = "Include no level req",
