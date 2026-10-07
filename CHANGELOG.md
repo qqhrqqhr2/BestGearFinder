@@ -1,5 +1,13 @@
 # Changelog - Best Gear Finder
 
+## 1.0.6
+- New: Item search window ("Item search" button / `/bgf find <name>`): filter all items by name or boss, required level, quality, source and an auction-house style category tree (weapon, armor, shield, libram/idol/totem, back, neck, ring, trinket). Shows a progress bar while loading.
+- New: "My character" dropdown to view the recommendations of any other class (view only, no comparison with your gear).
+- New: Dungeon boss drops and quest rewards for the new Forever dungeons were added or updated.
+- New: Background opacity sliders for the main and search windows.
+- Items with no level requirement are only listed when their item level is close to the top of your range (fewer too-low items).
+- The search window follows the language setting.
+
 ## 1.0.5
 - New: [BiS] marker for the top pick on the level 30 BiS list (PvE). BiS items are listed first in each slot, and an unworn BiS top pick is always shown.
 - Scores now include equip effects read from tooltips (spell power, healing, attack power, mana per 5 sec, defense) and weapon DPS for feral druids.

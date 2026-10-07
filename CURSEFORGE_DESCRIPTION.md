@@ -14,6 +14,8 @@ Open the window and see, slot by slot, the best items you can equip at your leve
 - Numeric **required-level range** (e.g. 20-35) plus a Search button to refresh after you change gear
 - **Upgrades only** mode compares against what you have equipped
 - **[BiS] marker** for the top pick on the level 30 BiS list (PvE); BiS items are listed first, and tooltips show how the item differs from what you wear
+- **Item search window**: search all items by name/boss, level, quality, source and an auction-house style category tree
+- View other classes with the "My character" dropdown; background opacity sliders
 - **New Forever items** that are not in the Classic database are found in the game client and marked [New] (source unknown)
 - A draggable on-screen icon opens the window with one click
 - Choose how many items to show per slot (2-10) from a dropdown
@@ -47,6 +49,8 @@ All item, loot, crafting, quest and vendor data is generated offline from the CM
 - **요구 레벨 범위**를 숫자로 입력(예: 20-35), 장비를 바꾼 뒤에는 검색 버튼으로 새로고침
 - **업그레이드만** 보기: 현재 착용 장비와 비교
 - 레벨 30 BiS 목록(PvE)의 1순위에 **[BiS]** 표시, BiS 아이템을 먼저 보여주고 툴팁에 현재 장비와의 차이를 표시
+- **아이템 검색 창**: 이름·보스, 레벨, 등급, 획득처, 경매장 식 분류로 전체 아이템 검색
+- "내 캐릭터" 드롭다운으로 다른 직업의 추천 보기, 배경 투명도 슬라이더
 - 슬롯당 표시 개수(2~10)를 드롭다운으로 선택
 - 슬롯 제목을 눌러 접기, 오른쪽 아래 모서리로 높이 조절, Shift+클릭으로 채팅창에 링크
 - "출처가 확인된 것만" 필터로 출처 불명 아이템 숨기기
