@@ -314,7 +314,7 @@ local function IndexForeverExtra()
             Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc, learned = learned }) end end)
             Each(X.quests, function(rec, e)
                 if not (onlyNew and rec.kinds.quest) then
-                    AddSource(rec, (L["요구 레벨"] ~= "요구 레벨" and e.titleEn) or e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false, learned = learned })
+                    AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false, learned = learned, titleEn = e.titleEn })
                 end
             end)
             Each(X.vendors, function(rec, e)
@@ -935,6 +935,11 @@ end
 -- 퀘스트 제목: 클라이언트 언어 제목을 얻을 수 있으면 사용, 아니면 DB의 영문 제목
 local titleRequested = {}
 function ns:QuestTitle(s)
+    -- 애드온 언어가 영어면 영어 제목 (게임 클라이언트가 한국어여도)
+    if L["요구 레벨"] ~= "요구 레벨" then
+        if s.titleEn then return s.titleEn end
+        if s.inst and not s.inst:find("[\128-\255]") then return s.inst end
+    end
     local t
     if C_QuestLog and C_QuestLog.GetTitleForQuestID then
         local ok, r = pcall(C_QuestLog.GetTitleForQuestID, s.qid)
