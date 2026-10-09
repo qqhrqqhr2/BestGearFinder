@@ -19,8 +19,29 @@ local function ItemIDFrom(tt, data)
     end
 end
 
+local GetItemInfoInstantC = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
+
+-- 장비(무기·방어구 부위)인지: 속옷·휘장·잡템은 추정하지 않는다
+local function IsGear(id)
+    local ok, _, _, _, loc = pcall(GetItemInfoInstantC, id)
+    return ok and type(loc) == "string" and ns.EQUIP_LOCS and ns.EQUIP_LOCS[loc] and true or false
+end
+
+-- ATT 애드온이 켜져 있고 그 아이템의 획득처를 알고 있으면 ATT 정보를 그대로 믿는다
+local function ATTKnows(id)
+    local att = _G.AllTheThings or _G.ATTC
+    if type(att) ~= "table" then return false end
+    local f = att.SearchForField
+    if type(f) ~= "function" then return false end
+    local ok, res = pcall(f, "itemID", id)
+    if not ok or type(res) ~= "table" then return false end
+    local obj = res[1] or (res.itemID and res) or nil
+    return obj and type(obj) == "table" and obj.parent ~= nil or false
+end
+
 -- 번호로 추정한 획득처 두 줄 (추정이 없으면 false)
 function ns:AddEstimateLines(tt, id)
+    if not IsGear(id) or ATTKnows(id) then return false end
     local est = id and ns:EstimateSource(id)
     if not est then return false end
     tt:AddLine(L["추정 획득처: "] .. est.long, 0.75, 0.75, 0.75, true)
@@ -44,7 +65,7 @@ local function Add(tt, id)
     local rec = ns.index[id]
     if not rec then
         -- 데이터에 없는 아이템: 신규 아이템 번호대(20만 이상)면 번호로 추정만 보여준다
-        if id < 200000 then return end
+        if id < 200000 or not IsGear(id) or ATTKnows(id) then return end
         local est = ns:EstimateSource(id)
         if not est then return end
         tt:AddLine(" ")
