@@ -225,7 +225,7 @@ function Run()
     local text = filter.text
     local pending, results, cand = 0, {}, 0
     for id, rec in pairs(ns.index) do
-        if rec and ns:IsItemDead(id) == false then
+        if rec then
             local ok = true
             if filter.cat and not CatMatch(filter.cat, rec) then ok = false end
             if ok and not SrcMatch(rec, filter.src) then ok = false end
@@ -298,7 +298,7 @@ function Run()
     local now = GetTime()
     if pending ~= lastPending then lastChange = now end
     lastPending = pending
-    if pending > 0 and now - lastChange < 4 then
+    if pending > 0 and now - lastChange < 8 then
         Schedule(0.7)          -- 아이템 정보가 더 도착하면 갱신 (중지를 누를 때까지)
     else
         if pending > 0 then noteText:SetText(format(L["%d개는 불러오지 못해 제외했습니다"], pending)) end

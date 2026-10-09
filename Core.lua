@@ -653,7 +653,14 @@ function Request(id, prio)
     end
 end
 
-function ns:RequestItem(id) Request(id, true) end
+-- 검색창용 요청: '포기(dead)' 횟수에 세지 않는다 (검색을 여러 번 하다 보면 아직 안 온 아이템이 영영 빠지던 문제)
+local searchAsked = {}
+function ns:RequestItem(id)
+    local t = searchAsked[id]
+    if t and GetTime() - t < 5 then return end
+    searchAsked[id] = GetTime()
+    queue[#queue + 1] = id
+end
 function ns:IsItemDead(id) return dead[id] and true or false end
 ns.GetItemInfoC = GetItemInfoC
 
