@@ -45,7 +45,11 @@ function ns:AddEstimateLines(tt, id)
     local est = id and ns:EstimateSource(id)
     if not est then return false end
     tt:AddLine(L["추정 획득처: "] .. est.long, 0.75, 0.75, 0.75, true)
-    tt:AddLine(string.format(L["(번호가 가까운 아이템 #%d 기준%s)"], est.near, est.sure and L[", 앞뒤 모두 같은 곳"] or ""), 0.55, 0.55, 0.55, true)
+    if est.wide then
+        tt:AddLine(string.format(L["(번호대 #%d 근처 아이템들이 모두 이 종류 · 구체적인 곳은 모름)"], est.near), 0.55, 0.55, 0.55, true)
+    else
+        tt:AddLine(string.format(L["(번호가 가까운 아이템 #%d 기준%s)"], est.near, est.sure and L[", 앞뒤 모두 같은 곳"] or ""), 0.55, 0.55, 0.55, true)
+    end
     return true
 end
 
@@ -70,8 +74,7 @@ local function Add(tt, id)
         if not est then return end
         tt:AddLine(" ")
         tt:AddLine("Best Gear Finder", 0.4, 0.8, 1)
-        tt:AddLine(L["추정 획득처: "] .. est.long, 0.75, 0.75, 0.75, true)
-        tt:AddLine(string.format(L["(번호가 가까운 아이템 #%d 기준%s)"], est.near, est.sure and L[", 앞뒤 모두 같은 곳"] or ""), 0.55, 0.55, 0.55, true)
+        ns:AddEstimateLines(tt, id)
         return
     end
     tt:AddLine(" ")

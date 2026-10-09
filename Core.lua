@@ -1065,6 +1065,7 @@ end
 -- 획득처를 모르는 아이템: 번호가 가까운 아이템의 획득처로 추정
 -- (포에버 신규 아이템은 던전·지역별로 번호가 묶여서 매겨져 있음). 앞뒤 3칸 안에 아는 아이템이 있을 때만.
 local EST_WINDOW = 3
+local EST_WIDE = 25
 local EST_KIND = { drop = 1, quest = 2, vendor = 3, craft = 4 }
 local function KnownSource(rec)
     local best, bp
@@ -1092,7 +1093,34 @@ function ns:EstimateSource(id)
         end
         if best then break end
     end
-    if not best then return nil end
+    if not best then
+        -- 2단계: 더 넓게(앞뒤 25칸) 봐서 아는 아이템들이 모두 같은 종류(퀘스트 보상/같은 던전 드랍/상인)면 그 종류로만 추정
+        local kinds, insts, n, nearest, nd = {}, {}, 0, nil, nil
+        for d = 1, EST_WIDE do
+            for _, cand in ipairs({ id - d, id + d }) do
+                if known[cand] then
+                    local o = KnownSource(self.index[cand])
+                    n = n + 1
+                    kinds[o.kind] = true
+                    insts[o.inst or "?"] = true
+                    if not nearest then nearest, nd = cand, d end
+                end
+            end
+        end
+        if n < 2 then return nil end
+        local kind, nk = nil, 0
+        for k in pairs(kinds) do kind = k; nk = nk + 1 end
+        if nk ~= 1 then return nil end
+        local inst, ni = nil, 0
+        for k in pairs(insts) do inst = k; ni = ni + 1 end
+        local text
+        if kind == "quest" then text = L["퀘스트 보상"]
+        elseif kind == "vendor" then text = L["상인 판매"]
+        elseif kind == "craft" then text = L["제작"]
+        elseif ni == 1 then text = LocInst(inst) .. L[" 드랍"]
+        else return nil end
+        return { short = text, long = text, near = nearest, dist = nd, sure = false, wide = true }
+    end
     local s = KnownSource(self.index[best])
     local short, long
     if s.kind == "drop" then
