@@ -43,7 +43,6 @@ end
 
 local function CreateRow(i)
     local r = CreateFrame("Button", nil, child)
-    r.bgfRow = true   -- 이 줄의 툴팁에는 게임 툴팁 훅이 획득처를 다시 붙이지 않는다
     r.icon = r:CreateTexture(nil, "ARTWORK")
     r.icon:SetSize(30, 30)
     r.icon:SetPoint("LEFT", 2, 0)
@@ -63,19 +62,14 @@ local function CreateRow(i)
     r:SetScript("OnEnter", function(self)
         if not self.link then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        ns.tipSuppressed = true
+        -- 아이템 툴팁 + 획득처/BiS 묶음은 다른 창에서 볼 때와 똑같이 (Tooltip.lua 가 붙임)
         GameTooltip:SetHyperlink(self.link)
-        ns.tipSuppressed = false
+        -- 이 창에서만 보이는 비교 정보
         GameTooltip:AddLine(" ")
         if self.baseIlvl then
             GameTooltip:AddLine(L["현재 착용 장비 아이템 레벨: "] .. self.baseIlvl, 0.7, 0.7, 0.7)
         else
             GameTooltip:AddLine(L["현재 이 슬롯: 비어 있음"], 0.7, 0.7, 0.7)
-        end
-        if self.bis == 2 then
-            GameTooltip:AddLine(L["레벨 30 BiS 목록의 1순위 아이템입니다."], 1, 0.82, 0)
-        elseif self.bis == 1 then
-            GameTooltip:AddLine(L["레벨 30 BiS 목록에 있는 대안 아이템입니다."], 0.9, 0.8, 0.4)
         end
         if self.weights and self.link and ns.StatDiffText then
             local okD, txt = pcall(ns.StatDiffText, self.link, self.baseLink, self.weights, 4)
@@ -85,35 +79,6 @@ local function CreateRow(i)
         end
         if self.score then
             GameTooltip:AddLine(format(L["추정 점수: 이 아이템 %.1f / 착용 중 %.1f"], self.score, self.baseScore or 0), 0.6, 0.9, 0.6)
-        end
-        local rec = self.rec
-        self.craftShown = false
-        if rec and #rec.src > 0 then
-            GameTooltip:AddLine(L["획득처"], 1, 0.82, 0)
-            local shown = 0
-            for _, s in ipairs(rec.src) do
-                if ns.SrcAllowed(s) then
-                    shown = shown + 1
-                    if shown > 6 then GameTooltip:AddLine("...", 0.7, 0.7, 0.7) break end
-                    if s.kind == "craft" then
-                        GameTooltip:AddLine(ns:FormatSource(s), 0.4, 0.8, 1)
-                        if not self.craftShown then
-                            self.craftShown = true
-                            for _, ln in ipairs(ns:CraftDetailLines(self.id or 0) or {}) do GameTooltip:AddLine(ln, 0.7, 0.85, 1, true) end
-                        end
-                    elseif s.kind == "quest" then
-                        GameTooltip:AddLine(ns:FormatSource(s), 1, 0.8, 0.3)
-                    else
-                        GameTooltip:AddLine(ns:FormatSource(s), 0.8, 0.8, 0.8)
-                    end
-                end
-            end
-        end
-        -- 출처 불명(신규)뿐이면 번호로 추정한 획득처를 덧붙인다
-        if rec and self.id and ns.AddEstimateLines then
-            local onlyUnknown = true
-            for _, s in ipairs(rec.src) do if s.kind ~= "unknown" then onlyUnknown = false end end
-            if onlyUnknown then ns:AddEstimateLines(GameTooltip, self.id) end
         end
         GameTooltip:Show()
     end)
