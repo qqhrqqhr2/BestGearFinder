@@ -26,6 +26,7 @@ ZONES = {
     "Wailing Caverns": "통곡의 동굴", "Shadowfang Keep": "그림자송곳니 성채", "Blackfathom Deeps": "검은심연의 나락",
     "The Stockade": "스톰윈드 지하감옥", "Stockade": "스톰윈드 지하감옥", "Gnomeregan": "놈리건", "Ragefire Chasm": "성난불길 협곡",
     "Razorfen Downs": "가시덩굴 구릉", "Scarlet Monastery": "붉은십자군 수도원", "Uldaman": "울다만",
+    "Rare": "희귀 몹", "World drop": "월드 드랍", "Library Books": "도서관 책", "PvP": "PvP 명예 보상",
     "Dalaran": "달라란", "Hall of Thanes": "영주의 전당", "Ruins of Lordaeron": "로데론의 폐허",
 }
 

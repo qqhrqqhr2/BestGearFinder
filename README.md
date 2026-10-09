@@ -112,6 +112,7 @@ Forever data (not in 1.12):
 - `tools/extract_dungeon_data.py` → `DungeonData.lua` (dungeon boss drops and dungeon quest rewards)
 - `tools/extract_world_data.py` → `WorldData.lua` (rare mob drops, zone vendors, zone quest rewards)
 - `tools/extract_craft_data.py <recipe Data.lua>` → `CraftData.lua` (crafted items, skill to learn, recipe needed)
+- `tools/extract_item_sources.py` → `ItemSources.lua` (gear sources noted on guide pages: quest rewards with faction, dungeon drops, vendors, rares, PvP sets)
 - `tools/extract_names.py --pages <dungeon pages> --drg <Dungeon Route Guide Data.lua>` → `NamesKO.lua` (Korean boss / zone names)
 
 ## Releasing (CurseForge)

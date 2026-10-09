@@ -308,22 +308,26 @@ local function IndexForeverExtra()
         end
         return false
     end
-    for _, X in ipairs({ ns.CraftData, ns.ForeverExtra, ns.DungeonData, ns.WorldData, db and db.learned }) do
+    local myFaction = (UnitFactionGroup and UnitFactionGroup("player") or ""):lower()   -- "alliance" / "horde"
+    local function SideOK(e) return not e.side or e.side == "both" or e.side == myFaction end
+    for _, X in ipairs({ ns.CraftData, ns.ForeverExtra, ns.DungeonData, ns.WorldData, ns.ItemSources, db and db.learned }) do
         local learned = (db and X == db.learned) or nil   -- 게임에서 직접 얻어 기록한 획득처
         skipKnown = learned and true or false             -- 데이터에 이미 있는 아이템이면 직접 기록은 보태지 않음
         -- 지역/희귀 몹 데이터는 같은 종류의 출처가 이미 있으면 보태지 않는다 (상인·퀘스트 이름이 달라 중복으로 보이는 것 방지)
-        local onlyNew = (X == ns.WorldData)
+        local onlyNew = (X == ns.WorldData or X == ns.ItemSources)
         if type(X) == "table" then
             Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc, learned = learned }) end end)
             Each(X.quests, function(rec, e)
                 -- 클래식 퀘스트 데이터에 있는 퀘스트면 직업·종족(진영) 조건을 따른다 (얼라/호드 같은 보상 퀘스트가 둘 다 나오지 않게)
                 local q = e.qid and e.qid > 0 and ns.QUESTS and ns.QUESTS[e.qid]
                 if q and not (HasBit(q[4], qcbit) and HasBit(q[5], qrbit)) then return end
+                if not SideOK(e) then return end
                 if not (onlyNew and rec.kinds.quest) then
                     AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false, learned = learned, titleEn = e.titleEn })
                 end
             end)
             Each(X.vendors, function(rec, e)
+                if not SideOK(e) then return end
                 if not (onlyNew and rec.kinds.vendor) then
                     AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc, learned = learned })
                 end
@@ -1064,7 +1068,7 @@ function ns:FormatSource0(s)
     if s.chance and s.chance < (db.minChance or 0) then
         return string.format(L["월드 드랍 - 잡몹 (%.3f%%)"], s.chance)
     end
-    local t = LocInst(s.inst) .. " - " .. LocBoss(s.boss, s.creature)
+    local t = LocInst(s.inst) .. ((s.boss and s.boss ~= "") and (" - " .. LocBoss(s.boss, s.creature)) or "")
     if s.chance then t = t .. string.format(" (%.1f%%)", s.chance) end
     return t
 end

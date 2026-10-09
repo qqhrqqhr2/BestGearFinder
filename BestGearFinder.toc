@@ -21,6 +21,7 @@ CraftData.lua
 ForeverExtra.lua
 DungeonData.lua
 WorldData.lua
+ItemSources.lua
 BiSData.lua
 NamesKO.lua
 Core.lua
