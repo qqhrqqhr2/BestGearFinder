@@ -965,17 +965,43 @@ function ns:PrimarySource(rec)
 end
 
 -- 데이터의 던전/전문기술 이름(한국어 원문)을 현지화, '보스 외 N' 표기 처리
+local function IsKorean() return L["요구 레벨"] == "요구 레벨" end
+
+-- 몹 이름을 몹 번호로 게임에서 직접 얻는다 (게임이 아는 이름 = 지금 언어). 한 번 얻으면 저장해 둔다.
+local npcAsked = {}
+local function NpcName(id)
+    if type(id) ~= "number" or id <= 0 then return nil end
+    local cache = db and db.npcNames
+    if cache and cache[id] then return cache[id] end
+    if not (C_TooltipInfo and C_TooltipInfo.GetHyperlink) then return nil end
+    local ok, data = pcall(C_TooltipInfo.GetHyperlink, ("unit:Creature-0-0-0-0-%d-0000000000"):format(id))
+    local line = ok and type(data) == "table" and data.lines and data.lines[1]
+    local name = line and line.leftText
+    if type(name) == "string" and name ~= "" and not (issecretvalue and issecretvalue(name)) then
+        if db then db.npcNames = db.npcNames or {}; db.npcNames[id] = name end
+        return name
+    end
+    npcAsked[id] = true
+    return nil
+end
+
 local function LocInst(name)
     if not name then return "?" end
+    if IsKorean() and ns.NamesKO and ns.NamesKO.zone[name] then return ns.NamesKO.zone[name] end
     return L[name]
 end
-local function LocBoss(boss)
+local function LocBoss(boss, npc)
     if not boss then return "?" end
     local base, n = boss:match("^(.-) 외 (%d+)$")
-    if base then boss = base .. string.format(L[" 외 %d"], tonumber(n)) end
-    local chest = boss:match("^상자: (.+)$")
-    if chest then boss = L["상자: "] .. chest end
-    return boss
+    local name = base or boss
+    if IsKorean() then
+        local ko = (ns.NamesKO and ns.NamesKO.boss[name]) or (npc and NpcName(npc))
+        if ko then name = ko end
+    end
+    if base then name = name .. string.format(L[" 외 %d"], tonumber(n)) end
+    local chest = name:match("^상자: (.+)$")
+    if chest then name = L["상자: "] .. chest end
+    return name
 end
 ns.LocInst, ns.LocBoss = LocInst, LocBoss
 
@@ -992,7 +1018,7 @@ function ns:ShortSource(rec, id)
     end
     if s.kind == "craft" then return L["제작:"] .. LocInst(s.inst) end
     if s.kind == "quest" then return L["퀘스트:"] .. self:QuestTitle(s) end
-    if s.kind == "vendor" then return L["상인:"] .. (s.boss or "?") end
+    if s.kind == "vendor" then return L["상인:"] .. LocBoss(s.boss or "?", s.creature) end
     if s.chance and s.chance < (db.minChance or 0) then return L["월드 드랍"] end
     return LocInst(s.inst)
 end
@@ -1015,12 +1041,12 @@ function ns:FormatSource0(s)
         return t .. ") · " .. (s.choice and L["선택 보상"] or L["확정 보상"])
     end
     if s.kind == "vendor" then
-        return L["상인: "] .. (s.boss or "?") .. " (" .. LocInst(s.inst) .. ")"
+        return L["상인: "] .. LocBoss(s.boss or "?", s.creature) .. " (" .. LocInst(s.inst) .. ")"
     end
     if s.chance and s.chance < (db.minChance or 0) then
         return string.format(L["월드 드랍 - 잡몹 (%.3f%%)"], s.chance)
     end
-    local t = LocInst(s.inst) .. " - " .. LocBoss(s.boss)
+    local t = LocInst(s.inst) .. " - " .. LocBoss(s.boss, s.creature)
     if s.chance then t = t .. string.format(" (%.1f%%)", s.chance) end
     return t
 end
@@ -1060,13 +1086,13 @@ function ns:EstimateSource(id)
     local short, long
     if s.kind == "drop" then
         short = LocInst(s.inst)
-        long = LocInst(s.inst) .. ((s.boss and s.boss ~= "" and s.boss ~= "?") and (" - " .. LocBoss(s.boss)) or "")
+        long = LocInst(s.inst) .. ((s.boss and s.boss ~= "" and s.boss ~= "?") and (" - " .. LocBoss(s.boss, s.creature)) or "")
     elseif s.kind == "quest" then
         short = L["퀘스트:"] .. self:QuestTitle(s)
         long = L["퀘스트: "] .. self:QuestTitle(s) .. L[" 근처 퀘스트"]
     elseif s.kind == "vendor" then
-        short = L["상인:"] .. (s.boss or "?")
-        long = L["상인: "] .. (s.boss or "?") .. " (" .. LocInst(s.inst) .. ")"
+        short = L["상인:"] .. LocBoss(s.boss or "?", s.creature)
+        long = L["상인: "] .. LocBoss(s.boss or "?", s.creature) .. " (" .. LocInst(s.inst) .. ")"
     else
         short = L["제작:"] .. LocInst(s.inst)
         long = L["제작: "] .. LocInst(s.inst)

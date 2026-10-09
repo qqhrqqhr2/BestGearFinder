@@ -22,6 +22,7 @@ ForeverExtra.lua
 DungeonData.lua
 WorldData.lua
 BiSData.lua
+NamesKO.lua
 Core.lua
 Learn.lua
 UI.lua
