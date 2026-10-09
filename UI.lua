@@ -822,10 +822,10 @@ function ns:UpdateUI()
                     local sv = e.sortVal and format("|cff80d0ff%s|r ", (e.sortVal % 1 == 0) and tostring(e.sortVal) or format("%.1f", e.sortVal)) or ""
                     if (e.req or 0) > 0 then
                         r.sub:SetText(sv .. format(L["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"], e.ilvl, e.req,
-                            self:ShortSource(e.rec)))
+                            self:ShortSource(e.rec, e.id)))
                     else
                         r.sub:SetText(sv .. format(L["|cffffd100%d|r |cffaaaaaa· 요구 없음 · %s|r"], e.ilvl,
-                            self:ShortSource(e.rec)))
+                            self:ShortSource(e.rec, e.id)))
                     end
                     r:Show()
                 end

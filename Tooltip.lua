@@ -25,7 +25,17 @@ local function Add(tt, id)
     if okO and type(owner) == "table" and owner.bgfRow then return end
     if ns.indexState ~= "done" or not ns.index then return end
     local rec = ns.index[id]
-    if not rec then return end
+    if not rec then
+        -- 데이터에 없는 아이템: 신규 아이템 번호대(20만 이상)면 번호로 추정만 보여준다
+        if id < 200000 then return end
+        local est = ns:EstimateSource(id)
+        if not est then return end
+        tt:AddLine(" ")
+        tt:AddLine("Best Gear Finder", 0.4, 0.8, 1)
+        tt:AddLine(L["추정 획득처: "] .. est.long, 0.75, 0.75, 0.75, true)
+        tt:AddLine(string.format(L["(번호가 가까운 아이템 #%d 기준%s)"], est.near, est.sure and L[", 앞뒤 모두 같은 곳"] or ""), 0.55, 0.55, 0.55, true)
+        return
+    end
     tt:AddLine(" ")
     tt:AddLine("Best Gear Finder", 0.4, 0.8, 1)
     -- BiS (지금 보고 있는 직업 기준)
@@ -59,6 +69,16 @@ local function Add(tt, id)
     end
     if total > shown then tt:AddLine(string.format(L["... 외 %d곳"], total - shown), 0.6, 0.6, 0.6) end
     if total == 0 then tt:AddLine(L["획득처 정보 없음"], 0.6, 0.6, 0.6) end
+    -- 출처 불명(신규)뿐이면 번호로 추정
+    local onlyUnknown = total > 0
+    for _, s in ipairs(rec.src) do if s.kind ~= "unknown" then onlyUnknown = false end end
+    if onlyUnknown or total == 0 then
+        local est = ns:EstimateSource(id)
+        if est then
+            tt:AddLine(L["추정 획득처: "] .. est.long, 0.75, 0.75, 0.75, true)
+            tt:AddLine(string.format(L["(번호가 가까운 아이템 #%d 기준%s)"], est.near, est.sure and L[", 앞뒤 모두 같은 곳"] or ""), 0.55, 0.55, 0.55, true)
+        end
+    end
 end
 
 local function OnItem(tt, data)

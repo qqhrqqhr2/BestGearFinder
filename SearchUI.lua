@@ -275,7 +275,7 @@ function Run()
         local col = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[d.quality]
         r.name:SetText(((col and type(col.hex) == "string" and col.hex) or "|cffffffff") .. d.name .. "|r")
         r.info:SetText(format("%s %d · %s %d · %s", L["요구"], d.req, "ilvl", d.ilvl, KindName(d.rec.classID, d.rec.subID)))
-        r.src:SetText(ns.ShortSource and ns:ShortSource(d.rec) or "")
+        r.src:SetText(ns.ShortSource and ns:ShortSource(d.rec, d.id) or "")
         r:Show()
     end
     listChild:SetHeight(math.max(1, math.min(total, MAX_ROWS) * ROW_H))

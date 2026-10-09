@@ -346,6 +346,7 @@ function ns:EnsureIndex()
 end
 
 function ns:ResetIndex()
+    self.knownIDs = nil
     self.indexState = "idle"
     indexCo = nil
 end
@@ -930,10 +931,17 @@ local function LocBoss(boss)
 end
 ns.LocInst, ns.LocBoss = LocInst, LocBoss
 
-function ns:ShortSource(rec)
+function ns:ShortSource(rec, id)
     local s = self:PrimarySource(rec)
-    if not s then return "?" end
-    if s.kind == "unknown" then return L["출처 불명 (신규)"] end
+    if not s then
+        local est = id and self:EstimateSource(id)
+        return est and (L["추정: "] .. est.short) or "?"
+    end
+    if s.kind == "unknown" then
+        local est = id and self:EstimateSource(id)
+        if est then return L["추정: "] .. est.short end
+        return L["출처 불명 (신규)"]
+    end
     if s.kind == "craft" then return L["제작:"] .. LocInst(s.inst) end
     if s.kind == "quest" then return L["퀘스트:"] .. self:QuestTitle(s) end
     if s.kind == "vendor" then return L["상인:"] .. (s.boss or "?") end
@@ -962,6 +970,65 @@ function ns:FormatSource(s)
     local t = LocInst(s.inst) .. " - " .. LocBoss(s.boss)
     if s.chance then t = t .. string.format(" (%.1f%%)", s.chance) end
     return t
+end
+
+-- 획득처를 모르는 아이템: 번호가 가까운 아이템의 획득처로 추정
+-- (포에버 신규 아이템은 던전·지역별로 번호가 묶여서 매겨져 있음). 앞뒤 3칸 안에 아는 아이템이 있을 때만.
+local EST_WINDOW = 3
+local EST_KIND = { drop = 1, quest = 2, vendor = 3, craft = 4 }
+local function KnownSource(rec)
+    local best, bp
+    for _, s in ipairs(rec.src) do
+        local p = EST_KIND[s.kind]
+        if p and (not bp or p < bp) then best, bp = s, p end
+    end
+    return best
+end
+function ns:EstimateSource(id)
+    if type(id) ~= "number" or self.indexState ~= "done" then return nil end
+    local known = self.knownIDs
+    if not known then
+        known = {}
+        for kid, rec in pairs(self.index) do
+            if rec and KnownSource(rec) then known[kid] = true end
+        end
+        self.knownIDs = known
+    end
+    if known[id] then return nil end
+    local best, bestD
+    for d = 1, EST_WINDOW do
+        for _, cand in ipairs({ id - d, id + d }) do
+            if not best and known[cand] then best, bestD = cand, d end
+        end
+        if best then break end
+    end
+    if not best then return nil end
+    local s = KnownSource(self.index[best])
+    local short, long
+    if s.kind == "drop" then
+        short = LocInst(s.inst)
+        long = LocInst(s.inst) .. ((s.boss and s.boss ~= "" and s.boss ~= "?") and (" - " .. LocBoss(s.boss)) or "")
+    elseif s.kind == "quest" then
+        short = L["퀘스트"]
+        long = L["퀘스트: "] .. self:QuestTitle(s) .. L[" 근처 퀘스트"]
+    elseif s.kind == "vendor" then
+        short = L["상인:"] .. (s.boss or "?")
+        long = L["상인: "] .. (s.boss or "?") .. " (" .. LocInst(s.inst) .. ")"
+    else
+        short = L["제작:"] .. LocInst(s.inst)
+        long = L["제작: "] .. LocInst(s.inst)
+    end
+    -- 반대쪽에도 같은 곳의 아이템이 있으면 더 확실
+    local sure = false
+    for d = 1, EST_WINDOW * 2 do
+        local other = (best < id) and (id + d) or (id - d)
+        if known[other] then
+            local o = KnownSource(self.index[other])
+            sure = (o.kind == s.kind and o.inst == s.inst)
+            break
+        end
+    end
+    return { short = short, long = long, near = best, dist = bestD, sure = sure }
 end
 
 -- 제작템의 재료와 제조법 획득처 (툴팁에 출처 줄 아래 붙임)
