@@ -1009,7 +1009,10 @@ end
 
 local function LocInst(name)
     if not name then return "?" end
-    if IsKorean() and ns.NamesKO and ns.NamesKO.zone[name] then return ns.NamesKO.zone[name] end
+    if IsKorean() then
+        local ko = (ns.NamesKO and ns.NamesKO.zone[name]) or (ns.ItemSources and ns.ItemSources.names and ns.ItemSources.names[name])
+        if ko then return ko end
+    end
     return L[name]
 end
 local function LocBoss(boss, npc)
@@ -1017,7 +1020,7 @@ local function LocBoss(boss, npc)
     local base, n = boss:match("^(.-) 외 (%d+)$")
     local name = base or boss
     if IsKorean() then
-        local ko = (ns.NamesKO and ns.NamesKO.boss[name]) or (npc and NpcName(npc))
+        local ko = (ns.NamesKO and ns.NamesKO.boss[name]) or (ns.ItemSources and ns.ItemSources.names and ns.ItemSources.names[name]) or (npc and NpcName(npc))
         if ko then name = ko end
     end
     if base then name = name .. string.format(L[" 외 %d"], tonumber(n)) end

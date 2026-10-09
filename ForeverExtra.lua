@@ -3,7 +3,7 @@
 -- Only items that are not in the CMaNGOS 1.12 data are listed here.
 local _, ns = ...
 ns.ForeverExtra = {
-    version = "ATT a21caf2",
+    version = "ATT 0647c57",
     drops = {
         [763] = { {inst="Dun Morogh", boss="Hammerspine", npc=1119} },
         [932] = { {inst="그림자송곳니 성채", boss="Fel Steed/Shadow Charger", npc=3864} },
@@ -331,6 +331,7 @@ ns.ForeverExtra = {
         [6654] = { {qid=1527, title="Call of Fire", lvl=10} },
         [6672] = { {qid=1559, title="Flash Bomb Recipe", lvl=30} },
         [6710] = { {qid=1582, title="Moonglow Vest", lvl=8} },
+        [6714] = { {qid=88756, title="Bring Back a Bang", lvl=27} },
         [6735] = { {qid=1618, title="Gearing Redridge", lvl=0} },
         [6755] = { {qid=1221, title="Blueleaf Tubers", lvl=20} },
         [6756] = { {qid=1221, title="Blueleaf Tubers", lvl=20} },
@@ -538,6 +539,8 @@ ns.ForeverExtra = {
         [270031] = { {qid=1200, title="Blackfathom Villainy (A)", lvl=18}, {qid=6561, title="Blackfathom Villainy (H)", lvl=18} },
         [270033] = { {qid=249, title="Morganth", lvl=20} },
         [270034] = { {qid=249, title="Morganth", lvl=20} },
+        [270036] = { {qid=378, title="The Fury Runs Deep", lvl=25} },
+        [270039] = { {qid=296, title="Ormer's Revenge", lvl=22} },
         [270042] = { {qid=2904, title="A Fine Mess", lvl=20} },
         [270045] = { {qid=2928, title="Gyrodrillmatic Excavationators", lvl=20} },
         [270050] = { {qid=304, title="A Grim Task", lvl=26} },
@@ -599,8 +602,15 @@ ns.ForeverExtra = {
         [281254] = { {qid=86585, title="Banner of the Fallen", lvl=0} },
         [281256] = { {qid=86614, title="Silver of the Waves", lvl=12} },
         [281257] = { {qid=86758, title="Twisting the Knife", lvl=12} },
+        [281296] = { {qid=98191, title="A Friend of the Family", lvl=20} },
+        [281297] = { {qid=98191, title="A Friend of the Family", lvl=20} },
         [281304] = { {qid=98216, title="Understanding Our Present", lvl=23} },
         [281305] = { {qid=98216, title="Understanding Our Present", lvl=23} },
+        [281306] = { {qid=98223, title="Old Habits", lvl=23} },
+        [281307] = { {qid=98223, title="Old Habits", lvl=23} },
+        [281312] = { {qid=98297, title="Stopping the Cycle", lvl=24} },
+        [281313] = { {qid=98297, title="Stopping the Cycle", lvl=24} },
+        [281314] = { {qid=98297, title="Stopping the Cycle", lvl=24} },
         [281318] = { {qid=98208, title="Bloom of the Heavens", lvl=22} },
         [281319] = { {qid=98310, title="Gleaning Our Future", lvl=24} },
         [281320] = { {qid=98310, title="Gleaning Our Future", lvl=24} },

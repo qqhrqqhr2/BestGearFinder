@@ -43,24 +43,48 @@ def main():
     a = ap.parse_args()
     sm = get("/sitemap.xml", a.cache)
     paths = sorted(set(re.findall(r"<loc>%s(/en/[^<]+)</loc>" % re.escape(ROOT), sm)))
-    drops, quests, vendors = {}, {}, {}
+    drops, quests, vendors, names = {}, {}, {}, {}
     def add(tbl, iid, e, key):
         lst = tbl.setdefault(iid, [])
         if not any(all(x.get(k) == e.get(k) for k in key) for x in lst): lst.append(e)
+    def pair(en, ko):
+        if en and ko and en != ko and en not in names: names[en] = ko
     dec = json.JSONDecoder()
-    for p in paths:
-        h = get(p, a.cache)
-        if not h: continue
-        t = flight(h)
+
+    def wrappers(t):
+        out = []
         for m in re.finditer(r'\{"item":\{"id":(\d+)', t):
             try: o, _ = dec.raw_decode(t[m.start():])
             except ValueError: continue
+            out.append((int(m.group(1)), o))
+        return out
+
+    def text_of(o):
+        x = U(o.get("where")) or (o.get("source")[0] if isinstance(o.get("source"), list) and o.get("source") else None) or U(o.get("sub"))
+        return x if isinstance(x, str) and x else None
+
+    def quest_title(parts):
+        if parts[0] in ("Quest rewards", "퀘스트 보상") and len(parts) > 1: return parts[1]
+        t = parts[-1]
+        m = re.match(r"Reward from (.+)", t) or re.match(r"(.+) 보상$", t)
+        return m.group(1) if m else t
+
+    for p in paths:
+        h = get(p, a.cache)
+        if not h: continue
+        hk = get(p.replace("/en/", "/ko/", 1), a.cache)
+        W = wrappers(flight(h))
+        K = {}
+        for iid, o in (wrappers(flight(hk)) if hk else []):
+            K.setdefault(iid, []).append(o)
+        for iid, o in W:
+            ko = K.get(iid).pop(0) if K.get(iid) else None
             it = o.get("item") or {}
             if U(it.get("slot")) is None: continue          # 장비만
-            iid = int(m.group(1))
             how = U(o.get("how"))
-            text = U(o.get("where")) or (o.get("source")[0] if isinstance(o.get("source"), list) and o.get("source") else None) or U(o.get("sub"))
-            if not isinstance(text, str) or not text: continue
+            text = text_of(o)
+            if not text: continue
+            ktext = text_of(ko) if ko else None
             href = U(o.get("href")) or U(o.get("sourceHref")) or ""
             if not isinstance(href, str): href = ""
             side = U(o.get("faction")) or "both"
@@ -71,23 +95,30 @@ def main():
             if not qid:
                 mm = re.search(r"/quests/(\d+)|#quest-(\d+)|#q-(\d+)", href)
                 if mm: qid = int(next(g for g in mm.groups() if g))
-            parts = [s.strip() for s in text.split(" · ")]
+            parts = [x.strip() for x in text.split(" · ")]
+            kparts = [x.strip() for x in ktext.split(" · ")] if ktext else None
+            if kparts and len(kparts) != len(parts): kparts = None
             dslug = (re.search(r"/dungeons/([a-z0-9-]+)", href) or [None, None])[1]
             if qid and ("Quest" in text or "Reward from" in text or how in ("quest", "world")):
-                title = parts[-1]
-                rm = re.match(r"Reward from (.+)", title)
-                if rm: title = rm.group(1)
-                add(quests, iid, {"qid": int(qid), "title": title, "side": side}, ("qid",))
+                ten = quest_title(parts)
+                tko = quest_title(kparts) if kparts else None
+                add(quests, iid, {"qid": int(qid), "title": tko or ten, "titleEn": ten, "side": side}, ("qid",))
             elif parts[0] == "Vendor" and len(parts) >= 2:
                 add(vendors, iid, {"zone": parts[2] if len(parts) > 2 else "?", "boss": parts[1]}, ("boss",))
+                if kparts:
+                    pair(parts[1], kparts[1])
+                    if len(parts) > 2: pair(parts[2], kparts[2])
             elif how == "drop" and dslug and len(parts) >= 2:
                 add(drops, iid, {"inst": DUNGEON_KO.get(dslug, parts[0]), "boss": parts[1]}, ("inst", "boss"))
+                if kparts: pair(parts[1], kparts[1])
             elif parts[0] == "Rares" and len(parts) >= 2:
                 add(drops, iid, {"inst": "Rare", "boss": parts[1]}, ("inst", "boss"))
+                if kparts: pair(parts[1], kparts[1])
             elif text == "World drop":
                 add(drops, iid, {"inst": "World drop", "boss": ""}, ("inst",))
             elif how == "discovery":
                 add(drops, iid, {"inst": parts[0], "boss": " · ".join(parts[1:])}, ("inst", "boss"))
+                if kparts: pair(parts[0], kparts[0]); pair(" · ".join(parts[1:]), " · ".join(kparts[1:]))
     # PvP 장비 세트 (명예 보상): 세트 이름과 진영
     t = flight(get("/en/pvp/gear", a.cache) or "")
     for m in re.finditer(r'\{"id":\d+,"name":"[^"]+","faction":"', t):
@@ -102,11 +133,13 @@ def main():
         f.write("local _, ns = ...\nns.ItemSources = {\n    drops = {\n")
         for iid in sorted(drops): f.write("        [%d] = { %s },\n" % (iid, ", ".join("{inst=%s, boss=%s}" % (q(x["inst"]), q(x["boss"])) for x in drops[iid])))
         f.write("    },\n    quests = {\n")
-        for iid in sorted(quests): f.write("        [%d] = { %s },\n" % (iid, ", ".join("{qid=%d, title=%s, titleEn=%s, side=%s, lvl=0}" % (x["qid"], q(x["title"]), q(x["title"]), q(x["side"])) for x in quests[iid])))
+        for iid in sorted(quests): f.write("        [%d] = { %s },\n" % (iid, ", ".join("{qid=%d, title=%s, titleEn=%s, side=%s, lvl=0}" % (x["qid"], q(x["title"]), q(x["titleEn"]), q(x["side"])) for x in quests[iid])))
         f.write("    },\n    vendors = {\n")
         for iid in sorted(vendors): f.write("        [%d] = { %s },\n" % (iid, ", ".join("{zone=%s, boss=%s, side=%s}" % (q(x["zone"]), q(x["boss"]), q(x.get("side", "both"))) for x in vendors[iid])))
+        f.write("    },\n    -- 영어 이름 -> 한국어 (보스·희귀 몹·상인·평판 등)\n    names = {\n")
+        for en in sorted(names): f.write("        [%s] = %s,\n" % (q(en), q(names[en])))
         f.write("    },\n}\n")
-    print("pages", len(paths), "drops", len(drops), "quests", len(quests), "vendors", len(vendors))
+    print("names", len(names), "pages", len(paths), "drops", len(drops), "quests", len(quests), "vendors", len(vendors))
 
 if __name__ == "__main__":
     main()
