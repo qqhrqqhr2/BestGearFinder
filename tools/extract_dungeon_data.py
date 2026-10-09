@@ -10,7 +10,7 @@ from pathlib import Path
 import os
 BASE = os.environ.get("DUNGEON_DATA_BASE", "")   # 데이터를 가져올 사이트 주소 (예: https://example.com/en)
 SLUGS = []   # 비어 있으면 던전 목록 페이지에서 자동으로 찾는다
-KO = {"Deadmines": "죽음의 폐광", "The Deadmines": "죽음의 폐광", "Shadowfang Keep": "그림자송곳니 성채", "Stockade": "스톰윈드 지하감옥", "The Stockade": "스톰윈드 지하감옥", "Razorfen Downs": "가시덩굴 구릉", "Uldaman": "울다만", "Ragefire Chasm": "성난불길 협곡", "Scarlet Monastery Armory": "붉은십자군 수도원", "Scarlet Monastery Cathedral": "붉은십자군 수도원", "Scarlet Monastery Graveyard": "붉은십자군 수도원", "Scarlet Monastery Library": "붉은십자군 수도원", "Ruins Of Lordaeron": "Ruins of Lordaeron", "Excavation Site": "Excavation Site", "Wailing Caverns": "통곡의 동굴", "Blackfathom Deeps": "검은심연의 나락", "Gnomeregan": "놈리건", "Razorfen Kraul": "가시덩굴 우리"}
+KO = {"Dalaran": "달라란", "Deadmines": "죽음의 폐광", "The Deadmines": "죽음의 폐광", "Shadowfang Keep": "그림자송곳니 성채", "Stockade": "스톰윈드 지하감옥", "The Stockade": "스톰윈드 지하감옥", "Razorfen Downs": "가시덩굴 구릉", "Uldaman": "울다만", "Ragefire Chasm": "성난불길 협곡", "Scarlet Monastery Armory": "붉은십자군 수도원", "Scarlet Monastery Cathedral": "붉은십자군 수도원", "Scarlet Monastery Graveyard": "붉은십자군 수도원", "Scarlet Monastery Library": "붉은십자군 수도원", "Ruins Of Lordaeron": "Ruins of Lordaeron", "Excavation Site": "Excavation Site", "Wailing Caverns": "통곡의 동굴", "Blackfathom Deeps": "검은심연의 나락", "Gnomeregan": "놈리건", "Razorfen Kraul": "가시덩굴 우리"}
 
 def discover(cache):
     p = Path(cache) / "_dungeons.html" if cache else None
