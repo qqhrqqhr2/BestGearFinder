@@ -1,5 +1,12 @@
 # Changelog - Best Gear Finder
 
+## 1.0.7
+- Dungeon data now covers 18 dungeons (Deadmines, Shadowfang Keep, Stockade, Razorfen Downs, Scarlet Monastery, Uldaman, Ragefire Chasm, Hall of Thanes, Dalaran and more): boss drops and dungeon quest rewards.
+- Level 30 BiS lists updated for all classes.
+- Crafted items updated for all professions (629 more items), with the skill needed to learn them and whether a recipe is required.
+- New Forever zones: vendor gear, zone quest rewards and rare mob drops added; Forever quest rewards and world drops updated.
+- Korean dungeon names for Dalaran, Hall of Thanes, Ruins of Lordaeron and Excavation Site.
+
 ## 1.0.6
 - New: Item search window ("Item search" button / `/bgf find <name>`): filter all items by name or boss, required level, quality, source and an auction-house style category tree (weapon, armor, shield, libram/idol/totem, back, neck, ring, trinket). Shows a progress bar while loading.
 - New: "My character" dropdown to view the recommendations of any other class (view only, no comparison with your gear).
