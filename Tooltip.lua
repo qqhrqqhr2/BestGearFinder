@@ -20,9 +20,13 @@ local function ItemIDFrom(tt, data)
 end
 
 local function Add(tt, id)
-    if ns.tipSuppressed or not ns.db or ns.db.itemTooltip == false then return end
-    local okO, owner = pcall(tt.GetOwner, tt)
-    if okO and type(owner) == "table" and owner.bgfRow then return end
+    if not ns.db or ns.db.itemTooltip == false then return end
+    -- 애드온 창의 줄 툴팁(GameTooltip)만 건너뛴다. 옆에 뜨는 비교 툴팁(착용 중인 장비)에는 붙인다.
+    if tt == GameTooltip then
+        if ns.tipSuppressed then return end
+        local okO, owner = pcall(tt.GetOwner, tt)
+        if okO and type(owner) == "table" and owner.bgfRow then return end
+    end
     if ns.indexState ~= "done" or not ns.index then return end
     local rec = ns.index[id]
     if not rec then
@@ -81,16 +85,35 @@ local function Add(tt, id)
     end
 end
 
+local errShown = false
 local function OnItem(tt, data)
-    local ok = pcall(function()
+    local ok, err = pcall(function()
         local id = ItemIDFrom(tt, data)
         if id then Add(tt, id) end
     end)
+    if not ok and not errShown and ns.db and ns.db.tipDebug then
+        errShown = true
+        print("|cff33ccffBest Gear Finder|r tooltip error: " .. tostring(err))
+    end
     return ok
+end
+
+-- /bgf tip : 지금 마우스를 올린 아이템에 대해 툴팁 표시가 안 되는 이유를 알려준다
+function ns:TooltipDiag()
+    local P = function(t) print("|cff33ccffBGF tip|r " .. t) end
+    P("TooltipDataProcessor=" .. tostring(TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and true or false)
+        .. " option=" .. tostring(ns.db and ns.db.itemTooltip) .. " index=" .. tostring(ns.indexState))
+    local ok, _, link = pcall(GameTooltip.GetItem, GameTooltip)
+    local id = ok and type(link) == "string" and tonumber(link:match("item:(%d+)"))
+    P("hover item=" .. tostring(id) .. " inData=" .. tostring(id and ns.index and ns.index[id] and true or false)
+        .. " hookCalls=" .. tostring(ns.tipCalls or 0))
+    ns.db.tipDebug = true
+    errShown = false
 end
 
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tt, data)
+        ns.tipCalls = (ns.tipCalls or 0) + 1
         if tt == GameTooltip or tt == ItemRefTooltip or (tt and tt.GetName and tt:GetName() and tt:GetName():find("^ShoppingTooltip")) then
             OnItem(tt, data)
         end

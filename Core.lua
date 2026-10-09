@@ -1392,6 +1392,8 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         if ns.RelabelData then ns.RelabelData() end
         if ns.RebuildUI then ns:RebuildUI() end
         Print("Language: " .. (db.lang or "auto"))
+    elseif msg == "tip" or msg == "툴팁" then
+        if ns.TooltipDiag then ns:TooltipDiag() end
     elseif msg == "export" or msg == "내보내기" then
         if ns.ShowLearnedExport then ns:ShowLearnedExport() end
     elseif msg == "learned" or msg == "기록" then

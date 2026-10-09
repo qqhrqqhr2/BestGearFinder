@@ -89,7 +89,7 @@ local function CreateRow(i)
         local rec = self.rec
         self.craftShown = false
         if rec and #rec.src > 0 then
-            GameTooltip:AddLine(L["획득처 (CMaNGOS)"], 1, 0.82, 0)
+            GameTooltip:AddLine(L["획득처"], 1, 0.82, 0)
             local shown = 0
             for _, s in ipairs(rec.src) do
                 if ns.SrcAllowed(s) then
