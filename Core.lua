@@ -739,15 +739,36 @@ function ns:Compute()
         for _, g in ipairs(ns.GROUPS) do
             local okSlot, errSlot = pcall(function()
                 local list = {}
+                -- 사용자가 고른 정렬 능력치 (없으면 추천 점수 순)
+                local sortTokens   -- 고른 능력치 묶음들 (묶음 안에서는 큰 값 하나만: 주문력/피해량처럼 같은 효과가 두 토큰에 겹쳐 있음)
+                if db.sortStats and next(db.sortStats) then
+                    sortTokens = {}
+                    for _, st in ipairs(ns.SORT_STATS or {}) do
+                        if db.sortStats[st.key] then sortTokens[#sortTokens + 1] = st.tokens end
+                    end
+                end
                 for _, e in ipairs(buckets[g.key]) do
                     local score = sc[e.id]
                     if not score then
                         score = ScoreItem(e.link, e.ilvl, weights)
                         sc[e.id] = score
                     end
-                    list[#list + 1] = { e = e, score = score, bis = ns:BisRank(si, e.id) }
+                    local sv
+                    if sortTokens then
+                        sv = 0
+                        local stt = GetStats(e.link)
+                        if stt then
+                            for _, grp in ipairs(sortTokens) do
+                                local m = 0
+                                for _, tk in ipairs(grp) do if (stt[tk] or 0) > m then m = stt[tk] end end
+                                sv = sv + m
+                            end
+                        end
+                    end
+                    list[#list + 1] = { e = e, score = score, bis = ns:BisRank(si, e.id), sv = sv }
                 end
                 table.sort(list, function(a, b)
+                    if sortTokens and a.sv ~= b.sv then return a.sv > b.sv end
                     if a.bis ~= b.bis then return a.bis > b.bis end
                     if a.score ~= b.score then return a.score > b.score end
                     return a.e.id < b.e.id
@@ -782,12 +803,12 @@ function ns:Compute()
                         if not db.classFilter or IsClassAllowed(e.id) ~= false then
                             picked[#picked + 1] = { id = e.id, link = e.link, ilvl = e.ilvl, req = e.req, rec = e.rec,
                                 quality = e.quality, score = w.score, upgrade = isUpgrade, baseIlvl = baseIlvl, baseScore = base,
-                                bis = w.bis, baseLink = baseLink, weights = weights }
+                                bis = w.bis, baseLink = baseLink, weights = weights, sortVal = w.sv }
                             if #picked >= (q and 30 or perSlot) then break end
                         end
                     end
                 end
-                if #picked > 1 then
+                if #picked > 1 and not sortTokens then
                     -- 출처가 확인된 아이템을 위로, 출처 불명(신규)은 아래로 (각 그룹 안에서는 점수순 유지)
                     local known, unknown = {}, {}
                     for _, pk in ipairs(picked) do

@@ -82,6 +82,22 @@ local AP, RAP, FAP = "ITEM_MOD_ATTACK_POWER_SHORT", "ITEM_MOD_RANGED_ATTACK_POWE
 local MP5, DPS, ARMOR = "ITEM_MOD_MANA_REGENERATION_SHORT", "ITEM_MOD_DAMAGE_PER_SECOND_SHORT", "RESISTANCE0_NAME"
 local DEF, DODGE, PARRY, BLOCK = "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT", "ITEM_MOD_DODGE_RATING_SHORT", "ITEM_MOD_PARRY_RATING_SHORT", "ITEM_MOD_BLOCK_VALUE_SHORT"
 
+-- 정렬 기준으로 고를 수 있는 능력치 (여러 개를 고르면 합계 순)
+ns.SORT_STATS = {
+    { key = "armor", label = "방어도", tokens = { ARMOR } },
+    { key = "dps",   label = "초당 공격력", tokens = { DPS } },
+    { key = "str",   label = "힘", tokens = { STR } },
+    { key = "agi",   label = "민첩성", tokens = { AGI } },
+    { key = "sta",   label = "체력", tokens = { STA } },
+    { key = "int",   label = "지능", tokens = { INT } },
+    { key = "spi",   label = "정신력", tokens = { SPI } },
+    { key = "sp",    label = "주문력", tokens = { "ITEM_MOD_SPELL_POWER_SHORT", "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT" } },
+    { key = "heal",  label = "치유량", tokens = { "ITEM_MOD_HEALING_DONE_SHORT", "ITEM_MOD_SPELL_HEALING_DONE_SHORT" } },
+    { key = "ap",    label = "전투력", tokens = { AP, RAP } },
+    { key = "mp5",   label = "5초당 마나 회복", tokens = { MP5 } },
+    { key = "def",   label = "방어 숙련도", tokens = { DEF } },
+}
+
 ns.SPECS = {
     WARRIOR = {
         { name = L["분노/무기 (딜)"], nameKo = "분노/무기 (딜)", w = { [STR]=1, [AGI]=0.7, [STA]=0.3, [AP]=0.5, [DPS]=4, [ARMOR]=0.01 } },

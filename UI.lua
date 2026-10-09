@@ -3,7 +3,7 @@ local ADDON, ns = ...
 local L = ns.L
 
 local FRAME_H = 604
-local MIN_FRAME_W = 480
+local MIN_FRAME_W = 800      -- 위쪽 버튼 줄(필터·정렬 … 후원)이 겹치지 않는 최소 폭
 local COL_MIN_W = 236
 local SIDE_PAD = 56          -- 스크롤바/여백 합계
 local ROW_H, HEADER_H = 36, 18
@@ -193,6 +193,73 @@ local function BuildFrame()
     filterBtn:SetScript("OnClick", function() if menu:IsShown() then menu:Hide() else menu:Show() end end)
     Tip(filterBtn, L["필터"], L["출처, 조건, 아이템 등급을 선택합니다."])
     menu:SetPoint("TOPLEFT", filterBtn, "BOTTOMLEFT", 0, -2)
+
+    -- 정렬 기준 (체크박스 드롭다운): 아무것도 안 고르면 추천 점수 순, 여러 개면 합계 순
+    local sortBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    sortBtn:SetSize(130, 22)
+    sortBtn:SetPoint("LEFT", filterBtn, "RIGHT", 6, 0)
+    local sortMenu = CreateFrame("Frame", nil, frame, template)
+    sortMenu:SetFrameStrata("DIALOG")
+    sortMenu:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+    SolidBG(sortMenu)
+    sortMenu:SetPoint("TOPLEFT", sortBtn, "BOTTOMLEFT", 0, -2)
+    sortMenu:Hide()
+    local sortChecks = {}
+    local function SortLabel()
+        local sel = {}
+        for _, st in ipairs(ns.SORT_STATS or {}) do
+            if ns.db.sortStats and ns.db.sortStats[st.key] then sel[#sel + 1] = L[st.label] end
+        end
+        if #sel == 0 then return L["추천순"] end
+        if #sel == 1 then return sel[1] end
+        return sel[1] .. " +" .. (#sel - 1)
+    end
+    local function SortChanged()
+        sortBtn:SetText(L["정렬: "] .. SortLabel() .. " ▼")
+        ns:Refresh(true)
+    end
+    local sy = -8
+    local defBtn = CreateFrame("Button", nil, sortMenu, "UIPanelButtonTemplate")
+    defBtn:SetSize(150, 20)
+    defBtn:SetPoint("TOPLEFT", 10, sy)
+    defBtn:SetText(L["추천순 (기본)"])
+    defBtn:SetScript("OnClick", function()
+        ns.db.sortStats = {}
+        for _, cb in ipairs(sortChecks) do cb:SetChecked(false) end
+        SortChanged()
+    end)
+    sy = sy - 24
+    for _, st in ipairs(ns.SORT_STATS or {}) do
+        local cb = CreateFrame("CheckButton", nil, sortMenu, "UICheckButtonTemplate")
+        cb:SetSize(22, 22)
+        cb:SetPoint("TOPLEFT", 8, sy)
+        local t = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        t:SetPoint("LEFT", cb, "RIGHT", 2, 0)
+        t:SetText(L[st.label])
+        cb:SetChecked(ns.db.sortStats and ns.db.sortStats[st.key] and true or false)
+        cb:SetScript("OnClick", function(self)
+            ns.db.sortStats = ns.db.sortStats or {}
+            ns.db.sortStats[st.key] = self:GetChecked() and true or nil
+            SortChanged()
+        end)
+        sortChecks[#sortChecks + 1] = cb
+        sy = sy - 22
+    end
+    local sh = sortMenu:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    sh:SetPoint("TOPLEFT", 12, sy - 4)
+    sh:SetWidth(150)
+    sh:SetJustifyH("LEFT")
+    sh:SetText(L["여러 개를 고르면 합계가 큰 순서"])
+    sortMenu:SetSize(170, -sy + 34)
+    sortBtn:SetText(L["정렬: "] .. SortLabel() .. " ▼")
+    sortBtn:SetScript("OnClick", function()
+        menu:Hide()
+        if sortMenu:IsShown() then sortMenu:Hide() else sortMenu:Show() end
+    end)
+    Tip(sortBtn, L["정렬"], L["슬롯마다 아이템을 어떤 순서로 보여줄지 고릅니다. 방어도, 초당 공격력, 힘·민첩성·체력·지능 등을 체크하면 그 값이 큰 순서로 나옵니다."])
+    frame:HookScript("OnHide", function() sortMenu:Hide() end)
     local my = -10
     local function Header(text)
         local h = menu:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -742,11 +809,12 @@ function ns:UpdateUI()
                     if ps and ps.kind == "quest" then mark = mark .. L["|cffffcc33[퀘스트]|r "] end
                     if ps and ps.kind == "vendor" then mark = mark .. L["|cff99ff99[상인]|r "] end
                     r.name:SetText(mark .. e.link)
+                    local sv = e.sortVal and format("|cff80d0ff%s|r ", (e.sortVal % 1 == 0) and tostring(e.sortVal) or format("%.1f", e.sortVal)) or ""
                     if (e.req or 0) > 0 then
-                        r.sub:SetText(format(L["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"], e.ilvl, e.req,
+                        r.sub:SetText(sv .. format(L["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"], e.ilvl, e.req,
                             self:ShortSource(e.rec)))
                     else
-                        r.sub:SetText(format(L["|cffffd100%d|r |cffaaaaaa· 요구 없음 · %s|r"], e.ilvl,
+                        r.sub:SetText(sv .. format(L["|cffffd100%d|r |cffaaaaaa· 요구 없음 · %s|r"], e.ilvl,
                             self:ShortSource(e.rec)))
                     end
                     r:Show()
