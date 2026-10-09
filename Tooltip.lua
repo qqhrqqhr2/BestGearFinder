@@ -19,6 +19,15 @@ local function ItemIDFrom(tt, data)
     end
 end
 
+-- 번호로 추정한 획득처 두 줄 (추정이 없으면 false)
+function ns:AddEstimateLines(tt, id)
+    local est = id and ns:EstimateSource(id)
+    if not est then return false end
+    tt:AddLine(L["추정 획득처: "] .. est.long, 0.75, 0.75, 0.75, true)
+    tt:AddLine(string.format(L["(번호가 가까운 아이템 #%d 기준%s)"], est.near, est.sure and L[", 앞뒤 모두 같은 곳"] or ""), 0.55, 0.55, 0.55, true)
+    return true
+end
+
 local function Add(tt, id)
     if not ns.db or ns.db.itemTooltip == false then return end
     -- 애드온 창의 줄 툴팁(GameTooltip)만 건너뛴다. 옆에 뜨는 비교 툴팁(착용 중인 장비)에는 붙인다.
@@ -81,11 +90,7 @@ local function Add(tt, id)
     local onlyUnknown = total > 0
     for _, s in ipairs(rec.src) do if s.kind ~= "unknown" then onlyUnknown = false end end
     if onlyUnknown or total == 0 then
-        local est = ns:EstimateSource(id)
-        if est then
-            tt:AddLine(L["추정 획득처: "] .. est.long, 0.75, 0.75, 0.75, true)
-            tt:AddLine(string.format(L["(번호가 가까운 아이템 #%d 기준%s)"], est.near, est.sure and L[", 앞뒤 모두 같은 곳"] or ""), 0.55, 0.55, 0.55, true)
-        end
+        ns:AddEstimateLines(tt, id)
     end
 end
 

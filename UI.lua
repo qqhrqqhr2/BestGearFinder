@@ -109,6 +109,12 @@ local function CreateRow(i)
                 end
             end
         end
+        -- 출처 불명(신규)뿐이면 번호로 추정한 획득처를 덧붙인다
+        if rec and self.id and ns.AddEstimateLines then
+            local onlyUnknown = true
+            for _, s in ipairs(rec.src) do if s.kind ~= "unknown" then onlyUnknown = false end end
+            if onlyUnknown then ns:AddEstimateLines(GameTooltip, self.id) end
+        end
         GameTooltip:Show()
     end)
     r:SetScript("OnLeave", function() GameTooltip:Hide() end)

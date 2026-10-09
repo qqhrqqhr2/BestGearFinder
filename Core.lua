@@ -1062,7 +1062,7 @@ function ns:EstimateSource(id)
         short = LocInst(s.inst)
         long = LocInst(s.inst) .. ((s.boss and s.boss ~= "" and s.boss ~= "?") and (" - " .. LocBoss(s.boss)) or "")
     elseif s.kind == "quest" then
-        short = L["퀘스트"]
+        short = L["퀘스트:"] .. self:QuestTitle(s)
         long = L["퀘스트: "] .. self:QuestTitle(s) .. L[" 근처 퀘스트"]
     elseif s.kind == "vendor" then
         short = L["상인:"] .. (s.boss or "?")
