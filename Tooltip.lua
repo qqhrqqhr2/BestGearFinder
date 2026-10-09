@@ -40,12 +40,18 @@ local function Add(tt, id)
         end
     end
     local shown, total = 0, 0
+    local craftShown = false
     for _, s in ipairs(rec.src) do
         total = total + 1
         if shown < MAX_LINES then
             shown = shown + 1
             local txt = ns:FormatSource(s)
-            if s.kind == "craft" then tt:AddLine(txt, 0.4, 0.8, 1, true)
+            if s.kind == "craft" then
+                tt:AddLine(txt, 0.4, 0.8, 1, true)
+                if not craftShown then
+                    craftShown = true
+                    for _, ln in ipairs(ns:CraftDetailLines(id) or {}) do tt:AddLine(ln, 0.7, 0.85, 1, true) end
+                end
             elseif s.kind == "quest" then tt:AddLine(txt, 1, 0.8, 0.3, true)
             elseif s.kind == "vendor" then tt:AddLine(txt, 0.6, 1, 0.6, true)
             else tt:AddLine(txt, 0.85, 0.85, 0.85, true) end

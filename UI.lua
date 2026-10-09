@@ -87,6 +87,7 @@ local function CreateRow(i)
             GameTooltip:AddLine(format(L["추정 점수: 이 아이템 %.1f / 착용 중 %.1f"], self.score, self.baseScore or 0), 0.6, 0.9, 0.6)
         end
         local rec = self.rec
+        self.craftShown = false
         if rec and #rec.src > 0 then
             GameTooltip:AddLine(L["획득처 (CMaNGOS)"], 1, 0.82, 0)
             local shown = 0
@@ -96,6 +97,10 @@ local function CreateRow(i)
                     if shown > 6 then GameTooltip:AddLine("...", 0.7, 0.7, 0.7) break end
                     if s.kind == "craft" then
                         GameTooltip:AddLine(ns:FormatSource(s), 0.4, 0.8, 1)
+                        if not self.craftShown then
+                            self.craftShown = true
+                            for _, ln in ipairs(ns:CraftDetailLines(self.id or 0) or {}) do GameTooltip:AddLine(ln, 0.7, 0.85, 1, true) end
+                        end
                     elseif s.kind == "quest" then
                         GameTooltip:AddLine(ns:FormatSource(s), 1, 0.8, 0.3)
                     else
@@ -803,6 +808,7 @@ function ns:UpdateUI()
                     r:ClearAllPoints()
                     r:SetPoint("TOPLEFT", child, "TOPLEFT", (si - 1) * colW + 2, -(y + (n - 1) * ROW_H))
                     r.link, r.rec, r.baseIlvl, r.score, r.baseScore, r.bis = e.link, e.rec, e.baseIlvl, e.score, e.baseScore, e.bis
+                    r.id = e.id
                     r.baseLink, r.weights = e.baseLink, e.weights
                     r.icon:SetTexture(e.rec.icon)
                     local mark = e.upgrade and "|cff40ff40▲|r " or ""

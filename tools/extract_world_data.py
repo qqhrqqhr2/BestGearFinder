@@ -77,7 +77,7 @@ def main():
         for title, ids in groups(section(t, "items")):
             low = title.lower()
             for iid in ids:
-                if "quest" in low: add(quests, iid, {"title": zone, "qid": 0, "lvl": 0}, ("title",))
+                if "quest" in low: add(quests, iid, {"title": zone + " 지역 퀘스트", "titleEn": zone + " quest", "qid": 0, "lvl": 0}, ("title",))
                 elif "drop" in low: add(drops, iid, {"inst": zone, "boss": ""}, ("inst", "boss"))
                 elif "reputation" in low: add(vendors, iid, {"zone": zone, "boss": title}, ("zone", "boss"))
     q = lambda s: json.dumps(s, ensure_ascii=False)
@@ -92,7 +92,7 @@ def main():
             f.write("        [%d] = { %s },\n" % (iid, ", ".join("{zone=%s, boss=%s}" % (q(x["zone"]), q(x["boss"])) for x in vendors[iid])))
         f.write("    },\n    quests = {\n")
         for iid in sorted(quests):
-            f.write("        [%d] = { %s },\n" % (iid, ", ".join("{qid=0, title=%s, lvl=0}" % q(x["title"]) for x in quests[iid])))
+            f.write("        [%d] = { %s },\n" % (iid, ", ".join("{qid=0, title=%s, titleEn=%s, lvl=0}" % (q(x["title"]), q(x["titleEn"])) for x in quests[iid])))
         f.write("    },\n}\n")
     print("zones", len(slugs), "drops", len(drops), "vendors", len(vendors), "quests", len(quests))
 

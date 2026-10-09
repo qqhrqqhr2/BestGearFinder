@@ -26,6 +26,18 @@ def discover(cache):
         if m.group(1) not in seen: seen.append(m.group(1))
     return seen
 
+def fetch_ko(slug, cache):
+    """한국어 페이지 (퀘스트 이름용). 주소의 /en 을 /ko 로 바꿔 받는다."""
+    p = Path(cache) / f"{slug}.ko.html" if cache else None
+    if p and p.exists():
+        return p.read_text(encoding="utf-8")
+    base = BASE[:-3] + "/ko" if BASE.endswith("/en") else BASE
+    req = urllib.request.Request(f"{base}/dungeons/{slug}", headers={"User-Agent": "Mozilla/5.0 BestGearFinder-data"})
+    h = urllib.request.urlopen(req, timeout=60).read().decode("utf-8")
+    if p:
+        p.parent.mkdir(parents=True, exist_ok=True); p.write_text(h, encoding="utf-8")
+    return h
+
 def fetch(slug, cache):
     p = Path(cache) / f"{slug}.html" if cache else None
     if p and p.exists():
@@ -76,13 +88,19 @@ def main():
             if not any(x["boss"] == boss and x["inst"] == inst for x in lst):
                 lst.append({"inst": inst, "boss": boss}); n1 += 1
         rq, _ = find_array(t, "rewardQuests")
+        ko_titles = {}
+        try:
+            rk, _ = find_array(flight(fetch_ko(slug, a.cache)), "rewardQuests")
+            ko_titles = {q2["id"]: q2["name"] for q2 in (rk or [])}
+        except Exception as e:
+            print("ko skip", slug, e)
         for q in rq or []:
             for r in q.get("rewards", []):
                 iid = r.get("id")
                 if not isinstance(iid, int): continue
                 lst = quests.setdefault(iid, [])
                 if not any(x["qid"] == q["id"] for x in lst):
-                    lst.append({"qid": q["id"], "title": q["name"], "lvl": 0}); n2 += 1
+                    lst.append({"qid": q["id"], "title": ko_titles.get(q["id"], q["name"]), "titleEn": q["name"], "lvl": 0}); n2 += 1
         print(f"{slug}: inst={inst!r} drops+{n1} quest rewards+{n2}")
     q = lambda s: json.dumps(s, ensure_ascii=False)
     with open(a.out, "w", encoding="utf-8") as f:
@@ -93,7 +111,7 @@ def main():
             f.write("        [%d] = { %s },\n" % (iid, ", ".join("{inst=%s, boss=%s}" % (q(x["inst"]), q(x["boss"])) for x in drops[iid])))
         f.write("    },\n    quests = {\n")
         for iid in sorted(quests):
-            f.write("        [%d] = { %s },\n" % (iid, ", ".join("{qid=%d, title=%s, lvl=%d}" % (x["qid"], q(x["title"]), x["lvl"]) for x in quests[iid])))
+            f.write("        [%d] = { %s },\n" % (iid, ", ".join("{qid=%d, title=%s, titleEn=%s, lvl=%d}" % (x["qid"], q(x["title"]), q(x["titleEn"]), x["lvl"]) for x in quests[iid])))
         f.write("    },\n}\n")
     print("drops items:", len(drops), "quest reward items:", len(quests))
 

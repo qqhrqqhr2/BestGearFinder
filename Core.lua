@@ -266,7 +266,7 @@ local function IndexForeverExtra()
             Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc }) end end)
             Each(X.quests, function(rec, e)
                 if not (onlyNew and rec.kinds.quest) then
-                    AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false })
+                    AddSource(rec, (L["요구 레벨"] ~= "요구 레벨" and e.titleEn) or e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false })
                 end
             end)
             Each(X.vendors, function(rec, e)
@@ -962,6 +962,41 @@ function ns:FormatSource(s)
     local t = LocInst(s.inst) .. " - " .. LocBoss(s.boss)
     if s.chance then t = t .. string.format(" (%.1f%%)", s.chance) end
     return t
+end
+
+-- 제작템의 재료와 제조법 획득처 (툴팁에 출처 줄 아래 붙임)
+local function ItemNameOf(id)
+    local n
+    if C_Item and C_Item.GetItemNameByID then
+        local ok, r = pcall(C_Item.GetItemNameByID, id)
+        if ok and type(r) == "string" then n = r end
+    end
+    if not n then
+        local ok, r = pcall(GetItemInfoC, id)
+        if ok and type(r) == "string" then n = r end
+    end
+    if not n then
+        local nm = ns.CraftData and ns.CraftData.names and ns.CraftData.names[id]
+        if nm then n = (L["요구 레벨"] ~= "요구 레벨") and nm[2] or nm[1] end
+        if C_Item and C_Item.RequestLoadItemDataByID then pcall(C_Item.RequestLoadItemDataByID, id) end
+    end
+    return n or ("#" .. id)
+end
+function ns:CraftDetailLines(id)
+    local info = ns.CraftData and ns.CraftData.info and ns.CraftData.info[id]
+    if not info then return nil end
+    local out = {}
+    if info.reag and #info.reag > 0 then
+        local parts = {}
+        for _, r in ipairs(info.reag) do
+            parts[#parts + 1] = ItemNameOf(r[1]) .. ((r[2] or 1) > 1 and (" x" .. r[2]) or "")
+        end
+        out[#out + 1] = L["  재료: "] .. table.concat(parts, ", ")
+    end
+    local english = L["요구 레벨"] ~= "요구 레벨"
+    local src = english and info.srcEn or info.src
+    if src and src ~= "" then out[#out + 1] = L["  배우는 곳: "] .. src end
+    return out
 end
 
 function ns:SourceText(rec)

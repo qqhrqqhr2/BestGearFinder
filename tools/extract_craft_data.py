@@ -5,7 +5,7 @@
   <제조법 Data.lua> 는 ns.Data[직업ID] = { recipes = { {주문ID, 아이템ID, 분류, 배우는숙련, ..., 출처(한국어), 출처(영어)} } } 형식.
   만들어지는 아이템 중 CMaNGOS 제작 데이터(GearDatabase.lua)에 없는 것만 담는다. 장비 여부는 게임에서 다시 거른다.
 """
-import argparse, re
+import argparse, re, json
 from lupa import LuaRuntime
 
 PROF = {171: "연금술", 164: "대장기술", 333: "마법부여", 202: "기계공학", 165: "가죽세공",
@@ -24,7 +24,7 @@ def main():
     L = LuaRuntime(unpack_returned_tuples=True)
     ns = L.table()
     L.execute("return function(src, ns) local fn = assert(load(src)); return fn('x', ns) end")(open(a.src, encoding="utf-8").read(), ns)
-    out = {}
+    out, info = {}, {}
     for line in ns.Data.keys():
         prof = PROF.get(int(line))
         if not prof: continue
@@ -32,8 +32,13 @@ def main():
         for k in range(1, len(recs) + 1):
             r = recs[k]
             item, spell, lvl = int(r[2] or 0), int(r[1] or 0), int(r[4] or 0)
-            if item <= 0 or item in known: continue
+            if item <= 0: continue
             src = (r[16] or "")
+            if item not in info:
+                reag = r[13]
+                rl = [(int(reag[x][1]), int(reag[x][2])) for x in range(1, len(reag) + 1)] if reag else []
+                info[item] = (rl, src, r[17] or "")
+            if item in known: continue
             need = src.split(" · ")[0] not in NO_RECIPE
             lst = out.setdefault(item, [])
             if not any(e[0] == prof for e in lst):
@@ -45,8 +50,18 @@ def main():
         for item in sorted(out):
             f.write("        [%d] = { %s },\n" % (item, ", ".join(
                 '{skill="%s", lvl=%d, recipe=%s, spell=%d}' % (p, l, "true" if n else "false", s) for p, l, n, s in out[item])))
+        f.write("    },\n    -- 재료 {아이템ID, 개수} 와 제조법 획득처(한국어/영어)\n    info = {\n")
+        q = lambda t: json.dumps(t, ensure_ascii=False)
+        for item in sorted(info):
+            rl, ko, en = info[item]
+            f.write("        [%d] = { reag = { %s }, src = %s, srcEn = %s },\n" % (item, ", ".join("{%d,%d}" % x for x in rl), q(ko), q(en)))
+        f.write("    },\n    -- 재료 이름 (게임이 아직 이름을 모를 때 대신 씀) {한국어, 영어}\n    names = {\n")
+        used = sorted({rid for rl, _, _ in info.values() for rid, _ in rl})
+        for rid in used:
+            nm = ns.ItemNames[rid] if ns.ItemNames else None
+            if nm: f.write("        [%d] = { %s, %s },\n" % (rid, q(nm[1] or ""), q(nm[2] or "")))
         f.write("    },\n}\n")
-    print("craft items:", len(out))
+    print("craft items:", len(out), "info:", len(info))
 
 if __name__ == "__main__":
     main()
