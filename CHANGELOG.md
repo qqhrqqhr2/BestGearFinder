@@ -1,5 +1,15 @@
 # Changelog - Best Gear Finder
 
+## 1.0.8
+- New: Sort dropdown with checkboxes (armor, DPS, strength, agility, stamina, intellect, spirit, spell power, healing, attack power, mp5, defense); several checked = sorted by their total.
+- New: Item tooltips everywhere (bags, character, chat links, comparison, quest, vendor, loot and other addons' windows) show this addon's sources and BiS mark. Crafted items list their reagents and where the recipe is learned.
+- New: Items with no known source get a likely source from nearby item IDs (marked as an estimate). Not shown for non-gear or when ATT knows the item.
+- New: Sources of gear you loot, get from quests or see at vendors are recorded automatically and shown as "(seen by you)"; /bgf export lists them.
+- Boss, mob and zone names in sources are shown in Korean when the addon language is Korean; quest titles follow the language setting.
+- Dungeon quest rewards follow faction/class rules (no other-faction quest for the same reward).
+- The Best Gear Finder window's item tooltip now matches other windows, plus the comparison with your equipped item.
+- Minimum window width so the top buttons no longer overlap for classes with 2-3 roles.
+
 ## 1.0.7
 - Dungeon data now covers 18 dungeons (Deadmines, Shadowfang Keep, Stockade, Razorfen Downs, Scarlet Monastery, Uldaman, Ragefire Chasm, Hall of Thanes, Dalaran and more): boss drops and dungeon quest rewards.
 - Level 30 BiS lists updated for all classes.
