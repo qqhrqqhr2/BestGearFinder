@@ -187,7 +187,7 @@ local function BuildFrame()
 
     -- 필터 메뉴: 모든 필터를 한 곳에 모은 팝업
     local menu = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-    menu:SetSize(232, 384)
+    menu:SetSize(232, 408)
     menu:SetFrameStrata("DIALOG")
     menu:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 12,
@@ -325,6 +325,7 @@ local function BuildFrame()
     my = my - 26
     Header(L["조건"])
     upChk = Check(L["업그레이드만"], "upgradeOnly", L["현재 착용 장비보다 점수가 높은 것만 보여줍니다."])
+    Check(L["획득처 자동 기록"], "learn", L["던전·필드에서 줍거나 퀘스트 보상·상인에서 본 장비 중 데이터에 획득처가 없는 것을 자동으로 기록해, 툴팁과 목록에 '(직접 확인)'으로 보여줍니다."])
     Check(L["아이템 툴팁에 획득처 표시"], "itemTooltip", L["가방·채팅 링크·상인 창 등 게임의 아이템 툴팁에 이 애드온이 아는 획득처와 BiS 여부를 붙입니다."])
     Check(L["화면에 아이콘 표시"], "iconShown", L["게임 화면에 떠 있는 실행 아이콘을 보여줍니다. 드래그해서 옮길 수 있습니다."])
     Check(L["신규 아이템 포함 (출처 불명)"], "newItems", L["1.12 DB에 없는 Forever 신규 장비를 게임에서 직접 찾아 포함합니다. 어디서 나오는지는 알 수 없습니다."])

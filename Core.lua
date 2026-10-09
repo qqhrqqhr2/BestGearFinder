@@ -3,7 +3,7 @@ local ADDON, ns = ...
 local L = ns.L
 _G.BestGearFinder = ns
 
-local DEFAULTS = { perSlot = 2, upgradeOnly = true, range = {}, qual = { [2] = true, [3] = true, [4] = true }, allModules = false, crafting = true, quests = true, minChance = 1, auction = true, newItems = true, iconShown = true, scan = {}, mobCut = true, classFilter = true, sourcedOnly = false, collapsed = {}, spec = {}, itemTooltip = true }
+local DEFAULTS = { perSlot = 2, upgradeOnly = true, range = {}, qual = { [2] = true, [3] = true, [4] = true }, allModules = false, crafting = true, quests = true, minChance = 1, auction = true, newItems = true, iconShown = true, scan = {}, mobCut = true, classFilter = true, sourcedOnly = false, collapsed = {}, spec = {}, itemTooltip = true, learn = true, learnNotify = true }
 
 ns.index = {}          -- [itemID] = { loc, classID, subID, icon, minLvl, src = { {inst, boss}, ... } } | false
 ns.indexState = "idle" -- idle | running | done | empty
@@ -220,6 +220,51 @@ local function ScanNewItems()
 end
 
 -- Forever 전용 획득처 (ForeverExtra.lua): CMaNGOS 1.12 DB에 없는 아이템의 출처
+-- 이미 데이터에 획득처(직접 기록 제외)가 있는 아이템인지
+local function HasKnown(rec)
+    for _, s in ipairs(rec.src) do
+        if s.kind ~= "unknown" and not s.learned then return true end
+    end
+    return false
+end
+function ns:HasKnownSource(id)
+    if self.indexState ~= "done" then return nil end
+    local rec = self.index[id]
+    return rec and HasKnown(rec) or false
+end
+
+-- 게임에서 직접 얻은 획득처를 기록하고, 이미 읽어 둔 데이터에도 바로 반영한다
+-- kind: "drops" {inst, boss, npc} / "quests" {qid, title, lvl} / "vendors" {zone, boss, npc}
+function ns:LearnSource(id, kind, e)
+    if type(id) ~= "number" or not db then return false end
+    db.learned = db.learned or {}
+    local L2 = db.learned
+    L2[kind] = L2[kind] or {}
+    local list = L2[kind][id]
+    if not list then list = {}; L2[kind][id] = list end
+    for _, o in ipairs(list) do
+        if (kind == "quests" and o.qid == e.qid) or (kind ~= "quests" and o.boss == e.boss and (o.inst or o.zone) == (e.inst or e.zone)) then
+            return false
+        end
+    end
+    e.t = time and time() or nil
+    list[#list + 1] = e
+    if ns.indexState == "done" then
+        local rec = ns.index[id]
+        if rec == nil then rec = MakeRecord(id); ns.index[id] = rec end
+        if rec then
+            if kind == "drops" then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc, learned = true })
+            elseif kind == "quests" then AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false, learned = true })
+            else AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc, learned = true }) end
+            -- '출처 불명' 표시는 지운다
+            for i = #rec.src, 1, -1 do if rec.src[i].kind == "unknown" then table.remove(rec.src, i) end end
+            rec.kinds.unknown = nil
+            ns.knownIDs = nil
+        end
+    end
+    return true
+end
+
 local function IndexForeverExtra()
     local st = ns.indexStats
     st.extra = 0
@@ -233,11 +278,12 @@ local function IndexForeverExtra()
         end
         return rec or nil
     end
+    local skipKnown = false
     local function Each(tbl, fn)
         if type(tbl) ~= "table" then return end
         for id, list in pairs(tbl) do
             local rec = Rec(id)
-            if rec then
+            if rec and not (skipKnown and HasKnown(rec)) then
                 st.extra = st.extra + 1
                 for _, e in ipairs(list) do fn(rec, e) end
             end
@@ -259,19 +305,21 @@ local function IndexForeverExtra()
         end
         return false
     end
-    for _, X in ipairs({ ns.CraftData, ns.ForeverExtra, ns.DungeonData, ns.WorldData }) do
+    for _, X in ipairs({ ns.CraftData, ns.ForeverExtra, ns.DungeonData, ns.WorldData, db and db.learned }) do
+        local learned = (db and X == db.learned) or nil   -- 게임에서 직접 얻어 기록한 획득처
+        skipKnown = learned and true or false             -- 데이터에 이미 있는 아이템이면 직접 기록은 보태지 않음
         -- 지역/희귀 몹 데이터는 같은 종류의 출처가 이미 있으면 보태지 않는다 (상인·퀘스트 이름이 달라 중복으로 보이는 것 방지)
         local onlyNew = (X == ns.WorldData)
         if type(X) == "table" then
-            Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc }) end end)
+            Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc, learned = learned }) end end)
             Each(X.quests, function(rec, e)
                 if not (onlyNew and rec.kinds.quest) then
-                    AddSource(rec, (L["요구 레벨"] ~= "요구 레벨" and e.titleEn) or e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false })
+                    AddSource(rec, (L["요구 레벨"] ~= "요구 레벨" and e.titleEn) or e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false, learned = learned })
                 end
             end)
             Each(X.vendors, function(rec, e)
                 if not (onlyNew and rec.kinds.vendor) then
-                    AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc })
+                    AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc, learned = learned })
                 end
             end)
             Each(X.craft, function(rec, e)
@@ -950,6 +998,11 @@ function ns:ShortSource(rec, id)
 end
 
 function ns:FormatSource(s)
+    local txt = self:FormatSource0(s)
+    if s.learned then txt = txt .. L[" (직접 확인)"] end
+    return txt
+end
+function ns:FormatSource0(s)
     if s.kind == "unknown" then return L["획득처 불명 (Forever 신규 아이템)"] end
     if s.kind == "craft" then
         local t = L["제작: "] .. LocInst(s.inst)
@@ -1339,6 +1392,10 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
         if ns.RelabelData then ns.RelabelData() end
         if ns.RebuildUI then ns:RebuildUI() end
         Print("Language: " .. (db.lang or "auto"))
+    elseif msg == "export" or msg == "내보내기" then
+        if ns.ShowLearnedExport then ns:ShowLearnedExport() end
+    elseif msg == "learned" or msg == "기록" then
+        Print(string.format(L["게임에서 직접 기록한 획득처: 아이템 %d개"], ns.LearnedCount and ns:LearnedCount() or 0))
     elseif msg == "icon" or msg == "아이콘" then
         db.iconShown = not db.iconShown
         ns:UpdateLauncher()

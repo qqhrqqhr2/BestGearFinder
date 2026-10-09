@@ -23,6 +23,7 @@ DungeonData.lua
 WorldData.lua
 BiSData.lua
 Core.lua
+Learn.lua
 UI.lua
 SearchUI.lua
 Tooltip.lua
