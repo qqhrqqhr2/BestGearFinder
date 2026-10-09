@@ -1,5 +1,10 @@
 # Changelog - Best Gear Finder
 
+## 1.0.9
+- Item search: searching again no longer drops items whose info had not arrived yet (they were wrongly given up on).
+- Many more gear sources: quest rewards (with faction), dungeon drops, vendors, rares, world drops and PvP sets collected from the guide pages. Korean names for quests, bosses and vendors.
+- Updated dungeon drops, level 30 BiS lists and Forever item data.
+
 ## 1.0.8
 - New: Sort dropdown with checkboxes (armor, DPS, strength, agility, stamina, intellect, spirit, spell power, healing, attack power, mp5, defense); several checked = sorted by their total.
 - New: Item tooltips everywhere (bags, character, chat links, comparison, quest, vendor, loot and other addons' windows) show this addon's sources and BiS mark. Crafted items list their reagents and where the recipe is learned.
