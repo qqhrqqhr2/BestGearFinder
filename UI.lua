@@ -43,6 +43,7 @@ end
 
 local function CreateRow(i)
     local r = CreateFrame("Button", nil, child)
+    r.bgfRow = true   -- 이 줄의 툴팁에는 게임 툴팁 훅이 획득처를 다시 붙이지 않는다
     r.icon = r:CreateTexture(nil, "ARTWORK")
     r.icon:SetSize(30, 30)
     r.icon:SetPoint("LEFT", 2, 0)
@@ -62,7 +63,9 @@ local function CreateRow(i)
     r:SetScript("OnEnter", function(self)
         if not self.link then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        ns.tipSuppressed = true
         GameTooltip:SetHyperlink(self.link)
+        ns.tipSuppressed = false
         GameTooltip:AddLine(" ")
         if self.baseIlvl then
             GameTooltip:AddLine(L["현재 착용 장비 아이템 레벨: "] .. self.baseIlvl, 0.7, 0.7, 0.7)
@@ -179,7 +182,7 @@ local function BuildFrame()
 
     -- 필터 메뉴: 모든 필터를 한 곳에 모은 팝업
     local menu = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-    menu:SetSize(232, 360)
+    menu:SetSize(232, 384)
     menu:SetFrameStrata("DIALOG")
     menu:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 12,
@@ -317,6 +320,7 @@ local function BuildFrame()
     my = my - 26
     Header(L["조건"])
     upChk = Check(L["업그레이드만"], "upgradeOnly", L["현재 착용 장비보다 점수가 높은 것만 보여줍니다."])
+    Check(L["아이템 툴팁에 획득처 표시"], "itemTooltip", L["가방·채팅 링크·상인 창 등 게임의 아이템 툴팁에 이 애드온이 아는 획득처와 BiS 여부를 붙입니다."])
     Check(L["화면에 아이콘 표시"], "iconShown", L["게임 화면에 떠 있는 실행 아이콘을 보여줍니다. 드래그해서 옮길 수 있습니다."])
     Check(L["신규 아이템 포함 (출처 불명)"], "newItems", L["1.12 DB에 없는 Forever 신규 장비를 게임에서 직접 찾아 포함합니다. 어디서 나오는지는 알 수 없습니다."])
     Check(L["몹 레벨 제한 (범위+8)"], "mobCut", L["출처 몬스터의 레벨이 요구 레벨 상한+8을 넘으면 제외합니다."])

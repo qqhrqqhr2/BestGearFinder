@@ -3,7 +3,7 @@ local ADDON, ns = ...
 local L = ns.L
 _G.BestGearFinder = ns
 
-local DEFAULTS = { perSlot = 2, upgradeOnly = true, range = {}, qual = { [2] = true, [3] = true, [4] = true }, allModules = false, crafting = true, quests = true, minChance = 1, auction = true, newItems = true, iconShown = true, scan = {}, mobCut = true, classFilter = true, sourcedOnly = false, collapsed = {}, spec = {} }
+local DEFAULTS = { perSlot = 2, upgradeOnly = true, range = {}, qual = { [2] = true, [3] = true, [4] = true }, allModules = false, crafting = true, quests = true, minChance = 1, auction = true, newItems = true, iconShown = true, scan = {}, mobCut = true, classFilter = true, sourcedOnly = false, collapsed = {}, spec = {}, itemTooltip = true }
 
 ns.index = {}          -- [itemID] = { loc, classID, subID, icon, minLvl, src = { {inst, boss}, ... } } | false
 ns.indexState = "idle" -- idle | running | done | empty

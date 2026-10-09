@@ -25,4 +25,5 @@ BiSData.lua
 Core.lua
 UI.lua
 SearchUI.lua
+Tooltip.lua
 Launcher.lua
