@@ -17,8 +17,10 @@ Locales.lua
 Data.lua
 GearDatabase.lua
 QuestData.lua
+CraftData.lua
 ForeverExtra.lua
 DungeonData.lua
+WorldData.lua
 BiSData.lua
 Core.lua
 UI.lua

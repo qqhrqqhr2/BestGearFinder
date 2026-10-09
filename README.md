@@ -108,6 +108,11 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
     python tools/extract_cmnangos.py "ClassicDB_1_12_1_z2815.sql.gz" --output "BestGearFinder/GearDatabase.lua"
 (`--min-quality 2`, `--world-rares` optional.) Source: https://github.com/cmangos/classic-db (GPL-3.0)
 
+Forever data (not in 1.12):
+- `tools/extract_dungeon_data.py` → `DungeonData.lua` (dungeon boss drops and dungeon quest rewards)
+- `tools/extract_world_data.py` → `WorldData.lua` (rare mob drops, zone vendors, zone quest rewards)
+- `tools/extract_craft_data.py <recipe Data.lua>` → `CraftData.lua` (crafted items, skill to learn, recipe needed)
+
 ## Releasing (CurseForge)
 Releases are automated with GitHub Actions + the BigWigs packager.
 1. Commit changes to `main` and test in game.

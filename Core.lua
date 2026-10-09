@@ -252,12 +252,33 @@ local function IndexForeverExtra()
         end
         return false
     end
-    for _, X in ipairs({ ns.ForeverExtra, ns.DungeonData }) do
+    -- 같은 전문기술 출처가 이미 있으면 다시 넣지 않는다 (제작 데이터가 여러 곳에 겹쳐 있음)
+    local function HasCraft(rec, skill)
+        for _, s in ipairs(rec.src) do
+            if s.kind == "craft" and s.inst == skill then return true end
+        end
+        return false
+    end
+    for _, X in ipairs({ ns.CraftData, ns.ForeverExtra, ns.DungeonData, ns.WorldData }) do
+        -- 지역/희귀 몹 데이터는 같은 종류의 출처가 이미 있으면 보태지 않는다 (상인·퀘스트 이름이 달라 중복으로 보이는 것 방지)
+        local onlyNew = (X == ns.WorldData)
         if type(X) == "table" then
             Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc }) end end)
-            Each(X.quests, function(rec, e) AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false }) end)
-            Each(X.vendors, function(rec, e) AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc }) end)
-            Each(X.craft, function(rec, e) AddSource(rec, e.skill, "", nil, "craft", nil, {}) end)
+            Each(X.quests, function(rec, e)
+                if not (onlyNew and rec.kinds.quest) then
+                    AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false })
+                end
+            end)
+            Each(X.vendors, function(rec, e)
+                if not (onlyNew and rec.kinds.vendor) then
+                    AddSource(rec, e.zone, e.boss, nil, "vendor", nil, { creature = e.npc })
+                end
+            end)
+            Each(X.craft, function(rec, e)
+                if not HasCraft(rec, e.skill) then
+                    AddSource(rec, e.skill, e.recipe and "도안 필요" or "", nil, "craft", e.lvl, e.spell and { spell = e.spell } or {})
+                end
+            end)
         end
     end
 end
