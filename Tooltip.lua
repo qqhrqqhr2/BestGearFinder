@@ -27,7 +27,11 @@ local function Add(tt, id)
         local okO, owner = pcall(tt.GetOwner, tt)
         if okO and type(owner) == "table" and owner.bgfRow then return end
     end
-    if ns.indexState ~= "done" or not ns.index then return end
+    if ns.indexState ~= "done" or not ns.index then
+        -- 아직 데이터를 안 읽었으면 지금 읽기 시작 (전투 중이 아닐 때)
+        if ns.indexState == "idle" and not (InCombatLockdown and InCombatLockdown()) then ns:EnsureIndex() end
+        return
+    end
     local rec = ns.index[id]
     if not rec then
         -- 데이터에 없는 아이템: 신규 아이템 번호대(20만 이상)면 번호로 추정만 보여준다
@@ -114,12 +118,11 @@ end
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tt, data)
         ns.tipCalls = (ns.tipCalls or 0) + 1
-        if tt == GameTooltip or tt == ItemRefTooltip or (tt and tt.GetName and tt:GetName() and tt:GetName():find("^ShoppingTooltip")) then
-            OnItem(tt, data)
-        end
+        -- 모든 아이템 툴팁 (가방, 캐릭터 창, 채팅 링크, 비교 툴팁, 퀘스트·상인·전리품 창, 다른 애드온 창 등)
+        if tt and tt.AddLine then OnItem(tt, data) end
     end)
 else
-    for _, tt in ipairs({ GameTooltip, ItemRefTooltip }) do
+    for _, tt in ipairs({ GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2, ItemRefShoppingTooltip1, ItemRefShoppingTooltip2 }) do
         if tt and tt.HookScript then tt:HookScript("OnTooltipSetItem", function(self) OnItem(self, nil) end) end
     end
 end
