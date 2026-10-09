@@ -266,6 +266,9 @@ function ns:LearnSource(id, kind, e)
 end
 
 local function IndexForeverExtra()
+    local qcbit = CLASS_BIT[ns:ActiveClass()]
+    local raceID = select(3, UnitRace("player"))
+    local qrbit = raceID and 2 ^ (raceID - 1) or nil
     local st = ns.indexStats
     st.extra = 0
     local idx = ns.index
@@ -313,6 +316,9 @@ local function IndexForeverExtra()
         if type(X) == "table" then
             Each(X.drops, function(rec, e) if not HasBoss(rec, e.boss) then AddSource(rec, e.inst, e.boss, nil, "drop", nil, { creature = e.npc, learned = learned }) end end)
             Each(X.quests, function(rec, e)
+                -- 클래식 퀘스트 데이터에 있는 퀘스트면 직업·종족(진영) 조건을 따른다 (얼라/호드 같은 보상 퀘스트가 둘 다 나오지 않게)
+                local q = e.qid and e.qid > 0 and ns.QUESTS and ns.QUESTS[e.qid]
+                if q and not (HasBit(q[4], qcbit) and HasBit(q[5], qrbit)) then return end
                 if not (onlyNew and rec.kinds.quest) then
                     AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false, learned = learned, titleEn = e.titleEn })
                 end
