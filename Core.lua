@@ -3,7 +3,7 @@ local ADDON, ns = ...
 local L = ns.L
 _G.BestGearFinder = ns
 
-local DEFAULTS = { perSlot = 2, upgradeOnly = true, range = {}, qual = { [2] = true, [3] = true, [4] = true }, allModules = false, crafting = true, quests = true, minChance = 1, auction = true, newItems = true, iconShown = true, scan = {}, mobCut = true, classFilter = true, sourcedOnly = false, collapsed = {}, spec = {}, itemTooltip = true, learn = true, learnNotify = true }
+local DEFAULTS = { bisPriority = false, perSlot = 2, upgradeOnly = true, range = {}, qual = { [2] = true, [3] = true, [4] = true }, allModules = false, crafting = true, quests = true, minChance = 1, auction = true, newItems = true, iconShown = true, scan = {}, mobCut = true, classFilter = true, sourcedOnly = false, collapsed = {}, spec = {}, itemTooltip = true, learn = true, learnNotify = true }
 
 ns.index = {}          -- [itemID] = { loc, classID, subID, icon, minLvl, src = { {inst, boss}, ... } } | false
 ns.indexState = "idle" -- idle | running | done | empty
@@ -15,6 +15,27 @@ ns.stats = { candidates = 0, ready = 0, pending = 0 }
 local db
 local scoreCache = {}
 local requested, queue, queueLo = {}, {}, {}
+local queueSearch, queued = {}, {}
+local queueHead, queueLoHead, searchHead = 1, 1, 1
+local function Enqueue(id, tier)
+    local old = queued[id]
+    if old and old <= tier then return end
+    queued[id] = tier
+    local q = tier == 1 and queueSearch or (tier == 2 and queue or queueLo)
+    q[#q + 1] = id
+end
+local function PopQueue(q, head, tier)
+    while head <= #q do
+        local id = q[head]
+        head = head + 1
+        if queued[id] == tier then
+            queued[id] = nil
+            return id, head
+        end
+    end
+    wipe(q)
+    return nil, 1
+end
 local attempts, dead = {}, {}  -- 요청 횟수 / 끝내 불러오지 못한(게임에 없는) 아이템
 local qdone = {}   -- 완료한 퀘스트 캐시 (계산할 때마다 초기화)
 
@@ -391,6 +412,7 @@ local function IndexBody()
 
     IndexQuests()
     IndexForeverExtra()
+    ns.indexBaseReady = true   -- 기존 획득처는 신규 ID 탐색을 기다리지 않고 검색 가능
     ScanNewItems()
 end
 
@@ -398,6 +420,7 @@ local indexCo
 function ns:EnsureIndex()
     if self.indexState == "running" or self.indexState == "done" or self.indexState == "empty" then return end
     wipe(self.index)
+    self.indexBaseReady = false
     scoreCache = {}
     self.indexState = "running"
     indexCo = coroutine.create(IndexBody)
@@ -406,6 +429,7 @@ end
 function ns:ResetIndex()
     self.knownIDs = nil
     self.indexState = "idle"
+    self.indexBaseReady = false
     indexCo = nil
 end
 
@@ -473,7 +497,7 @@ local function TooltipStats(id)
 end
 ns.TooltipStats = TooltipStats
 
-local statsCache = {}
+local statsCache, statsLinks = {}, {}
 local function GetStats(link)
     local st = statsCache[link]
     if st == nil then
@@ -488,29 +512,44 @@ local function GetStats(link)
             end
             st = merged
             statsCache[link] = st
+            statsLinks[id] = statsLinks[id] or {}
+            statsLinks[id][link] = true
         else
             st = base
-            if base then statsCache[link] = base end   -- 툴팁을 못 읽었으면 다음에 다시 시도
+            -- 툴팁 API가 있는데 정보가 지연된 결과는 캐시하지 않는다.
+            if base and not (C_TooltipInfo and C_TooltipInfo.GetItemByID) then
+                statsCache[link] = base
+                if id then
+                    statsLinks[id] = statsLinks[id] or {}
+                    statsLinks[id][link] = true
+                end
+            end
         end
     end
-    return st
+    return st, statsCache[link] ~= nil
 end
 ns.GetStats = GetStats
 
 local function ScoreItem(link, ilvl, weights)
     local sc = (ilvl or 0) * ns.ILVL_WEIGHT
-    local stats = GetStats(link)
+    local stats, complete = GetStats(link)
     if stats then
         for k, v in pairs(stats) do
             local m = weights[k]
             if m then sc = sc + v * m end
         end
     end
-    return sc
+    return sc, complete
 end
 
 local scanTip, classPrefix
 local allowCache = {}
+local function InvalidateItemCaches(id)
+    for link in pairs(statsLinks[id] or {}) do statsCache[link] = nil end
+    statsLinks[id] = nil
+    allowCache[id] = nil
+    for _, scores in pairs(scoreCache) do scores[id] = nil end
+end
 -- 직업 제한 아이템("직업: 전사, 성기사") 판별. 모르면 nil 반환.
 local function IsClassAllowed(id)
     local c = allowCache[id]
@@ -579,7 +618,10 @@ local function Usable(rec, rules, armorType, dwOK)
         if loc == "INVTYPE_WEAPONOFFHAND" and not dwOK then return false end
         return true
     elseif cID == ns.CLASS_ARMOR then
-        if ns.ARMOR_LOCS[loc] then return sID == armorType end
+        if ns.ARMOR_LOCS[loc] then
+            -- 숙련 방어구보다 낮은 종류도 착용 가능 (예: 드루이드의 천 힐 장비).
+            return type(sID) == "number" and sID >= 1 and sID <= armorType
+        end
         if loc == "INVTYPE_SHIELD" then return rules.shield and sID == 6 end
         if loc == "INVTYPE_RELIC" then return rules.relic == sID end
         if loc == "INVTYPE_RANGED" or loc == "INVTYPE_RANGEDRIGHT" or loc == "INVTYPE_THROWN" then return false end
@@ -590,18 +632,24 @@ local function Usable(rec, rules, armorType, dwOK)
 end
 
 local function EquippedScore(group, weights)
-    local base, baseLink
-    if ns.viewClass then return 0, nil end
+    local base, baseLink, complete = nil, nil, true
+    if ns.viewClass then return 0, nil, false end
     for _, slot in ipairs(group.inv) do
         local link = GetInventoryItemLink("player", slot)
-        local s = 0
+        local score = 0
         if link then
-            local _, _, _, ilvl = GetItemInfoC(link)
-            s = ScoreItem(link, ilvl, weights)
+            local name, _, _, ilvl = GetItemInfoC(link)
+            if not name then
+                complete = false
+            else
+                local ready
+                score, ready = ScoreItem(link, ilvl, weights)
+                if not ready then complete = false end
+            end
         end
-        if not base or s < base then base, baseLink = s, link end
+        if not base or score < base then base, baseLink = score, link end
     end
-    return base or 0, baseLink
+    return base or 0, baseLink, complete
 end
 
 -- 현재 장비(교체될 것)와 비교해 점수에 가장 크게 기여하는 능력치 차이 문자열
@@ -624,7 +672,7 @@ function ns.StatDiffText(link, baseLink, weights, maxN)
     for i = 1, math.min(maxN or 4, #list) do
         local e = list[i]
         local label = type(_G[e.k]) == "string" and _G[e.k] or e.k:gsub("^ITEM_MOD_", ""):gsub("_SHORT$", "")
-        out[#out + 1] = format("%s %+d", label, math.floor(e.d + (e.d >= 0 and 0.5 or -0.5)))
+        out[#out + 1] = format("%s %+d", label, (e.d >= 0 and math.floor(e.d + 0.5) or math.ceil(e.d - 0.5)))
     end
     return table.concat(out, ", ")
 end
@@ -643,29 +691,40 @@ local function EquippedIlvl(group)
 end
 
 local IsCached = C_Item and C_Item.IsItemDataCachedByID
+-- 요청 횟수/시각은 실제 전송 때 기록한다. 아직 대기열에 있는 요청은 중복하지 않는다.
 local Request
 function Request(id, prio)
-    if dead[id] then return end
+    if dead[id] then return false end
+    if queued[id] then Enqueue(id, prio and 2 or 3); return true end
     local t = requested[id]
-    if not t or GetTime() - t > 10 then
-        local n = attempts[id] or 0
-        if n >= 3 then dead[id] = true; return end   -- 3번 물어도 답이 없으면 포기
-        attempts[id] = n + 1
-        requested[id] = GetTime()
-        local q = prio and queue or queueLo
-        q[#q + 1] = id
-    end
+    if t and GetTime() - t < 10 then return true end
+    if (attempts[id] or 0) >= 3 then dead[id] = true; return false end
+    Enqueue(id, prio and 2 or 3)
+    return true
 end
 
--- 검색창용 요청: '포기(dead)' 횟수에 세지 않는다 (검색을 여러 번 하다 보면 아직 안 온 아이템이 영영 빠지던 문제)
-local searchAsked = {}
 function ns:RequestItem(id)
-    local t = searchAsked[id]
-    if t and GetTime() - t < 5 then return end
-    searchAsked[id] = GetTime()
-    queue[#queue + 1] = id
+    if dead[id] then return false end
+    if queued[id] then Enqueue(id, 1); return true end
+    local t = requested[id]
+    if t and GetTime() - t < 10 then return true end
+    if (attempts[id] or 0) >= 3 then dead[id] = true; return false end
+    Enqueue(id, 1)
+    return true
 end
+function ns:CancelSearchRequests()
+    for id, tier in pairs(queued) do
+        if tier == 1 then queued[id] = nil end
+    end
+    wipe(queueSearch)
+    searchHead = 1
+end
+function ns:IsItemQueued(id) return queued[id] ~= nil end
 function ns:IsItemDead(id) return dead[id] and true or false end
+function ns:GetCachedItemInfo(id)
+    if IsCached and not IsCached(id) then return nil end
+    return GetItemInfoC(id)
+end
 ns.GetItemInfoC = GetItemInfoC
 
 -- 요구 레벨이 없는(0) 아이템은 아이템 레벨이 범위 상한 -2 ~ +10 인 것만 포함한다(너무 낮은 퀘스트템/높은 선행 아이템 제외)
@@ -680,13 +739,14 @@ end
 -- BiS 목록 조회: 스펙 칸 si 에서 아이템 id 의 등급 (2 = 1순위, 1 = 대안, 0 = 목록에 없음)
 local bisCache = {}
 -- 현재 보고 있는 직업이 착용할 수 있는 아이템인지 (검색창용)
-function ns:UsableByActive(rec)
+function ns:UsableByActive(rec, id)
     local rules = ns.CLASS_RULES[ns:ActiveClass()]
     if not rules then return true end
     local level = UnitLevel("player")
     local class = ns:ActiveClass()
     local dwOK = rules.dualWield and level >= (ns.DUAL_WIELD_LEVEL[class] or 99) or false
     return Usable(rec, rules, GetArmorType(rules, level), dwOK)
+        and (not id or IsClassAllowed(id) ~= false)
 end
 
 function ns:SetViewClass(cls)
@@ -720,6 +780,8 @@ local function BisLookup(si)
     return c
 end
 function ns:IsAnyBis(id)
+    local lo, hi = self:GetRange()
+    if lo > 30 or hi < 30 then return false end
     for si = 1, #self:GetSpecList() do
         local c = BisLookup(si)
         if c.top[id] or c.alt[id] then return true end
@@ -727,6 +789,8 @@ function ns:IsAnyBis(id)
     return false
 end
 function ns:BisRank(si, id)
+    local lo, hi = self:GetRange()
+    if lo > 30 or hi < 30 then return 0 end
     local c = BisLookup(si)
     return c.top[id] and 2 or (c.alt[id] and 1 or 0)
 end
@@ -759,7 +823,7 @@ function ns:Compute()
                 name, link, quality, ilvl, reqLevel = GetItemInfoC(id)
             end
             if not name then
-                if not IsCached then Request(id, true) end
+                Request(id, true)   -- 캐시 표시와 달리 상세 정보가 없으면 재요청
                 if dead[id] then skipped = skipped + 1 else pending = pending + 1 end
             else
                 ready = ready + 1
@@ -816,8 +880,9 @@ function ns:Compute()
                 for _, e in ipairs(buckets[g.key]) do
                     local score = sc[e.id]
                     if not score then
-                        score = ScoreItem(e.link, e.ilvl, weights)
-                        sc[e.id] = score
+                        local complete
+                        score, complete = ScoreItem(e.link, e.ilvl, weights)
+                        if complete then sc[e.id] = score end
                     end
                     local sv
                     if sortTokens then
@@ -835,11 +900,30 @@ function ns:Compute()
                 end
                 table.sort(list, function(a, b)
                     if sortTokens and a.sv ~= b.sv then return a.sv > b.sv end
-                    if a.bis ~= b.bis then return a.bis > b.bis end
+                    if db.bisPriority and a.bis ~= b.bis then return a.bis > b.bis end
                     if a.score ~= b.score then return a.score > b.score end
+                    if a.bis ~= b.bis then return a.bis > b.bis end
                     return a.e.id < b.e.id
                 end)
-                local base, baseLink = EquippedScore(g, weights)
+                local base, baseLink, baseReady = EquippedScore(g, weights)
+                local weaponSwitch = (g.key == "MAIN1H" or g.key == "OFF") and twoHanded
+                if g.key == "MAIN2H" and not other and not twoHanded then
+                    local offLink = GetInventoryItemLink("player", 17)
+                    if offLink then
+                        local name, _, _, ilvl = GetItemInfoC(offLink)
+                        if name then
+                            local offScore, offReady = ScoreItem(offLink, ilvl, weights)
+                            base = base + offScore
+                            baseReady = baseReady and offReady
+                        else baseReady = false end
+                        baseLink = nil -- 합산 비교에는 단일 장비 능력치 차이를 표시하지 않는다.
+                    end
+                end
+                local comparable = not other and baseReady and not weaponSwitch
+                local compareNote = other and L["다른 직업 보기"] or (not baseReady and L["착용 장비 확인 중"])
+                    or (weaponSwitch and L["무기 조합 확인 필요"])
+                    or (g.key == "MAIN2H" and not twoHanded and not baseLink and base > 0 and L["주무기 + 보조 장비 합산 비교"])
+                local showReference = other or weaponSwitch or not baseReady
                 if si == 1 then self.funnel = self.funnel or {}; self.funnel[g.key] = { cand = #list, base = base, top = list[1] and list[1].score or 0, topId = list[1] and list[1].e.id } end
                 local baseIlvl = EquippedIlvl(g)
                 local picked = {}
@@ -859,36 +943,18 @@ function ns:Compute()
                     return false
                 end
                 for _, w in ipairs(list) do
-                    local isUpgrade = w.score > base * (1 + ns.UPGRADE_MARGIN_PCT) + ns.UPGRADE_MARGIN_ABS
-                    -- BiS 1순위는 점수와 무관하게 아직 착용하지 않았다면 항상 표시
-                    if w.bis == 2 and not worn[w.e.id] then isUpgrade = true end
+                    local isUpgrade = comparable and w.score > base * (1 + ns.UPGRADE_MARGIN_PCT) + ns.UPGRADE_MARGIN_ABS
                     if q and not Match(w.e) then
                         -- 검색어와 맞지 않는 아이템은 제외
-                    elseif (q or not db.upgradeOnly or isUpgrade) and (q or not (w.bis == 2 and worn[w.e.id])) then
+                    elseif (q or showReference or not db.upgradeOnly or isUpgrade) and (q or not (w.bis == 2 and worn[w.e.id])) then
                         local e = w.e
                         if not db.classFilter or IsClassAllowed(e.id) ~= false then
                             picked[#picked + 1] = { id = e.id, link = e.link, ilvl = e.ilvl, req = e.req, rec = e.rec,
                                 quality = e.quality, score = w.score, upgrade = isUpgrade, baseIlvl = baseIlvl, baseScore = base,
-                                bis = w.bis, baseLink = baseLink, weights = weights, sortVal = w.sv }
+                                bis = w.bis, baseLink = baseLink, weights = weights, sortVal = w.sv, comparable = comparable, compareNote = compareNote }
                             if #picked >= (q and 30 or perSlot) then break end
                         end
                     end
-                end
-                if #picked > 1 and not sortTokens then
-                    -- 출처가 확인된 아이템을 위로, 출처 불명(신규)은 아래로 (각 그룹 안에서는 점수순 유지)
-                    local known, unknown = {}, {}
-                    for _, pk in ipairs(picked) do
-                        local ps = ns:PrimarySource(pk.rec)
-                        if pk.bis == 2 then
-                            known[#known + 1] = pk
-                        elseif ps and ps.kind == "unknown" then
-                            unknown[#unknown + 1] = pk
-                        else
-                            known[#known + 1] = pk
-                        end
-                    end
-                    for _, pk in ipairs(unknown) do known[#known + 1] = pk end
-                    picked = known
                 end
                 if #picked > 0 then picks[g.key] = picked end
             end)
@@ -1271,9 +1337,16 @@ end
 
 -- '검색' 버튼: 캐시/대기 상태를 비우고 현재 착용 장비 기준으로 처음부터 다시 계산
 function ns:ForceRefresh()
+    scoreCache = {}
+    wipe(statsCache)
+    wipe(statsLinks)
+    wipe(allowCache)
     wipe(requested)
     wipe(queue)
     wipe(queueLo)
+    wipe(queueSearch)
+    wipe(queued)
+    queueHead, queueLoHead, searchHead = 1, 1, 1
     wipe(attempts)
     wipe(dead)
     if self.indexState == "empty" then self:ResetIndex() end
@@ -1303,15 +1376,22 @@ driver:SetScript("OnUpdate", function(_, dt)
     end
     -- 아이템 정보 요청을 조금씩 나눠 보냄
     acc = acc + dt
-    if acc >= (ns.fastLoad and 0.03 or 0.1) and (#queue > 0 or #queueLo > 0) then
+    if acc >= (ns.fastLoad and 0.05 or 0.1) then
         acc = 0
-        for _ = 1, (ns.fastLoad and 200 or 30) do
-            local id = table.remove(queue) or table.remove(queueLo)
+        for _ = 1, (ns.fastLoad and 40 or 30) do
+            local id
+            id, searchHead = PopQueue(queueSearch, searchHead, 1)
+            if not id then id, queueHead = PopQueue(queue, queueHead, 2) end
+            if not id then id, queueLoHead = PopQueue(queueLo, queueLoHead, 3) end
             if not id then break end
-            if C_Item and C_Item.RequestLoadItemDataByID then
-                C_Item.RequestLoadItemDataByID(id)
-            else
-                GetItemInfoC(id)
+            if not dead[id] then
+                requested[id] = GetTime()
+                attempts[id] = (attempts[id] or 0) + 1
+                if C_Item and C_Item.RequestLoadItemDataByID then
+                    C_Item.RequestLoadItemDataByID(id)
+                else
+                    GetItemInfoC(id)
+                end
             end
         end
     end
@@ -1330,9 +1410,12 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
     if event == "ADDON_LOADED" then
         if arg1 == ADDON then InitDB() end
     elseif event == "GET_ITEM_INFO_RECEIVED" then
-        if arg2 == false and requested[arg1] then dead[arg1] = true end   -- 서버가 '없음'이라고 답한 아이템
+        if arg2 == true then
+            dead[arg1], requested[arg1], attempts[arg1] = nil, nil, nil
+            InvalidateItemCaches(arg1)
+        elseif arg2 == false and requested[arg1] then dead[arg1] = true end   -- 서버가 '없음'이라고 답한 아이템
         if ns.frame and ns.frame:IsShown() and ns.stats.pending > 0 then ns:ScheduleRefresh(1.5) end
-        if ns.OnItemInfo then ns.OnItemInfo() end
+        if ns.OnItemInfo then ns.OnItemInfo(arg1, arg2) end
     elseif event == "QUEST_TURNED_IN" then
         ns:ScheduleRefresh(0.8)
     elseif event == "QUEST_DATA_LOAD_RESULT" then

@@ -6,7 +6,7 @@ local FRAME_H = 604
 local MIN_FRAME_W = 800      -- 위쪽 버튼 줄(필터·정렬 … 후원)이 겹치지 않는 최소 폭
 local COL_MIN_W = 236
 local SIDE_PAD = 56          -- 스크롤바/여백 합계
-local ROW_H, HEADER_H = 36, 18
+local ROW_H, HEADER_H = 62, 26
 
 local rows, headers, colHeaders, dividers, hbtns = {}, {}, {}, {}, {}
 local qualChk, menuChecks, chanceEdit = {}, {}, nil
@@ -26,14 +26,26 @@ end
 -- 반투명 배경 대신 불투명한 단색 배경 (글씨가 잘 보이도록)
 local function SolidBG(f)
     local t = f:CreateTexture(nil, "BACKGROUND", nil, -8)
-    t:SetColorTexture(0.04, 0.04, 0.06, 1)
+    t:SetColorTexture(0.035, 0.05, 0.075, 1)
     t:SetPoint("TOPLEFT", 3, -3)
     t:SetPoint("BOTTOMRIGHT", -3, 3)
     f.solidBG = t
 end
 ns.SolidBG = SolidBG
 
-local function Hex(c) return c and format("|cff%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255) or "|cffffffff" end
+function ns.ThemeWindow(f)
+    f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+    f:SetBackdropColor(0.035, 0.05, 0.075, 0.95)
+    f:SetBackdropBorderColor(0.18, 0.25, 0.34, 1)
+    local line = f:CreateTexture(nil, "ARTWORK")
+    line:SetColorTexture(0.24, 0.68, 0.82, 0.85)
+    line:SetPoint("TOPLEFT", 1, -1)
+    line:SetPoint("TOPRIGHT", -1, -1)
+    line:SetHeight(2)
+end
+
+local function Hex(c) return c and format("|cff%02x%02x%02x", math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255)) or "|cffffffff" end
 
 local function RoleColor(name)
     if name:find("탱") or name:find("Tank") then return 0.45, 0.7, 1 end
@@ -44,18 +56,30 @@ end
 local function CreateRow(i)
     local r = CreateFrame("Button", nil, child)
     r.icon = r:CreateTexture(nil, "ARTWORK")
-    r.icon:SetSize(30, 30)
-    r.icon:SetPoint("LEFT", 2, 0)
+    r.bg = r:CreateTexture(nil, "BACKGROUND")
+    r.bg:SetPoint("TOPLEFT", 0, 0); r.bg:SetPoint("BOTTOMRIGHT", 0, 4)
+    r.bg:SetColorTexture(0.075, 0.10, 0.145, 0.95)
+    r.accent = r:CreateTexture(nil, "ARTWORK")
+    r.accent:SetPoint("TOPLEFT", 0, 0); r.accent:SetPoint("BOTTOMLEFT", 0, 4)
+    r.accent:SetWidth(2)
+    r.icon:SetSize(34, 34)
+    r.icon:SetPoint("TOPLEFT", 8, -8)
+    r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     r.name = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 4, -1)
-    r.name:SetPoint("RIGHT", r, "RIGHT", -2, 0)
+    r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 8, 0)
+    r.name:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -8)
     r.name:SetJustifyH("LEFT")
     r.name:SetWordWrap(false)
     r.sub = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    r.sub:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2)
-    r.sub:SetPoint("RIGHT", r, "RIGHT", -2, 0)
+    r.sub:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -4)
+    r.sub:SetPoint("TOPRIGHT", r.name, "BOTTOMRIGHT", 0, -4)
     r.sub:SetJustifyH("LEFT")
     r.sub:SetWordWrap(false)
+    r.source = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    r.source:SetPoint("TOPLEFT", r.sub, "BOTTOMLEFT", 0, -4)
+    r.source:SetPoint("TOPRIGHT", r.sub, "BOTTOMRIGHT", 0, -4)
+    r.source:SetJustifyH("LEFT")
+    r.source:SetWordWrap(false)
     r.hl = r:CreateTexture(nil, "HIGHLIGHT")
     r.hl:SetAllPoints()
     r.hl:SetColorTexture(1, 1, 1, 0.08)
@@ -66,19 +90,25 @@ local function CreateRow(i)
         GameTooltip:SetHyperlink(self.link)
         -- 이 창에서만 보이는 비교 정보
         GameTooltip:AddLine(" ")
-        if self.baseIlvl then
+        if self.compareNote then
+            GameTooltip:AddLine(self.compareNote, 0.8, 0.85, 0.95, true)
+        end
+        if not self.comparable then
+            -- 다른 직업/무기 조합/정보 대기는 빈 슬롯 비교와 구분한다.
+        elseif self.baseIlvl then
             GameTooltip:AddLine(L["현재 착용 장비 아이템 레벨: "] .. self.baseIlvl, 0.7, 0.7, 0.7)
         else
             GameTooltip:AddLine(L["현재 이 슬롯: 비어 있음"], 0.7, 0.7, 0.7)
         end
-        if self.weights and self.link and ns.StatDiffText then
+        if self.comparable and not self.compareNote and self.weights and self.link and ns.StatDiffText then
             local okD, txt = pcall(ns.StatDiffText, self.link, self.baseLink, self.weights, 4)
             if okD and txt and txt ~= "" then
                 GameTooltip:AddLine(format(L["현재 장비 대비: %s"], txt), 0.6, 0.8, 1, true)
             end
         end
-        if self.score then
+        if self.score and self.comparable then
             GameTooltip:AddLine(format(L["추정 점수: 이 아이템 %.1f / 착용 중 %.1f"], self.score, self.baseScore or 0), 0.6, 0.9, 0.6)
+            GameTooltip:AddLine(L["표시된 %는 추정 점수 변화입니다."], 0.65, 0.72, 0.8)
         end
         GameTooltip:Show()
     end)
@@ -133,6 +163,7 @@ local function BuildFrame()
         tile = true, tileSize = 32, edgeSize = 32,
         insets = { left = 11, right = 12, top = 12, bottom = 11 },
     })
+    ns.ThemeWindow(frame)
     -- 화면보다 넓어지면 자동 축소
     local maxW = UIParent:GetWidth() * 0.96
     if maxW and maxW > 0 and frameW > maxW then frame:SetScale(maxW / frameW) end
@@ -154,7 +185,7 @@ local function BuildFrame()
     close:SetPoint("TOPRIGHT", -5, -5)
 
     titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    titleText:SetPoint("TOP", 0, -16)
+    titleText:SetPoint("TOPLEFT", 18, -14)
 
     -- 필터 메뉴: 모든 필터를 한 곳에 모은 팝업
     local menu = CreateFrame("Frame", nil, frame, "BackdropTemplate")
@@ -191,7 +222,7 @@ local function BuildFrame()
         for _, st in ipairs(ns.SORT_STATS or {}) do
             if ns.db.sortStats and ns.db.sortStats[st.key] then sel[#sel + 1] = L[st.label] end
         end
-        if #sel == 0 then return L["추천순"] end
+        if #sel == 0 then return ns.db.bisPriority and L["30레벨 BiS 우선"] or L["추천순"] end
         if #sel == 1 then return sel[1] end
         return sel[1] .. " +" .. (#sel - 1)
     end
@@ -206,6 +237,17 @@ local function BuildFrame()
     defBtn:SetText(L["추천순 (기본)"])
     defBtn:SetScript("OnClick", function()
         ns.db.sortStats = {}
+        ns.db.bisPriority = false
+        for _, cb in ipairs(sortChecks) do cb:SetChecked(false) end
+        SortChanged()
+    end)
+    sy = sy - 24
+    local bisBtn = CreateFrame("Button", nil, sortMenu, "UIPanelButtonTemplate")
+    bisBtn:SetSize(150, 20)
+    bisBtn:SetPoint("TOPLEFT", 10, sy)
+    bisBtn:SetText(L["30레벨 BiS 우선"])
+    bisBtn:SetScript("OnClick", function()
+        ns.db.sortStats, ns.db.bisPriority = {}, true
         for _, cb in ipairs(sortChecks) do cb:SetChecked(false) end
         SortChanged()
     end)
@@ -464,8 +506,8 @@ local function BuildFrame()
     local function ApplyAlpha(a)
         a = math.max(0.3, math.min(1, a or 0.85))
         if frame.solidBG then frame.solidBG:SetAlpha(a) end
-        if frame.SetBackdropColor then frame:SetBackdropColor(1, 1, 1, a) end
-        if frame.SetBackdropBorderColor then frame:SetBackdropBorderColor(1, 1, 1, math.min(1, a + 0.2)) end
+        if frame.SetBackdropColor then frame:SetBackdropColor(0.035, 0.05, 0.075, a) end
+        if frame.SetBackdropBorderColor then frame:SetBackdropBorderColor(0.18, 0.25, 0.34, math.min(1, a + 0.2)) end
     end
     ns.ApplyMainAlpha = ApplyAlpha
     ApplyAlpha(ns.db.mainAlpha or 0.85)
@@ -564,6 +606,10 @@ local function BuildFrame()
         fs:SetTextColor(RoleColor(spec.name))
         fs:SetText(spec.name)
         colHeaders[i] = fs
+        local accent = frame:CreateTexture(nil, "ARTWORK")
+        accent:SetColorTexture(RoleColor(spec.name))
+        accent:SetPoint("TOPLEFT", frame, "TOPLEFT", 22 + (i - 1) * colW, -109)
+        accent:SetSize(colW - 10, 2)
     end
     local line = frame:CreateTexture(nil, "ARTWORK")
     line:SetColorTexture(1, 1, 1, 0.25)
@@ -721,7 +767,7 @@ function ns:UpdateUI()
     local function Visible(list)
         if not list or not self.db.upgradeOnly or (ns.searchText or "") ~= "" then return list end
         local out = {}
-        for _, e in ipairs(list) do if e.upgrade then out[#out + 1] = e end end
+        for _, e in ipairs(list) do if e.upgrade or not e.comparable then out[#out + 1] = e end end
         return #out > 0 and out or nil
     end
     local drawBands = {}
@@ -738,7 +784,7 @@ function ns:UpdateUI()
         hdrN = hdrN + 1
         local h = headers[hdrN] or CreateHeader(hdrN)
         h:SetWordWrap(false)
-        h:SetTextColor(0.4, 0.8, 1)
+        h:SetTextColor(0.60, 0.72, 0.85)
         h:ClearAllPoints()
         h:SetPoint("TOPLEFT", child, "TOPLEFT", 4, -y - 2)
         h:SetWidth(colW * nCols - 8)
@@ -782,23 +828,23 @@ function ns:UpdateUI()
                     r.link, r.rec, r.baseIlvl, r.score, r.baseScore, r.bis = e.link, e.rec, e.baseIlvl, e.score, e.baseScore, e.bis
                     r.id = e.id
                     r.baseLink, r.weights = e.baseLink, e.weights
+                    r.comparable, r.compareNote = e.comparable, e.compareNote
                     r.icon:SetTexture(e.rec.icon)
-                    local mark = e.upgrade and "|cff40ff40▲|r " or ""
-                    if e.bis == 2 then mark = "|cffffd100[BiS]|r " .. mark end
-                    local ps = self:PrimarySource(e.rec)
-                    if ps and ps.kind == "unknown" then mark = mark .. L["|cffff80ff[신규]|r "] end
-                    if ps and ps.kind == "craft" then mark = mark .. L["|cff66ccff[제작]|r "] end
-                    if ps and ps.kind == "quest" then mark = mark .. L["|cffffcc33[퀘스트]|r "] end
-                    if ps and ps.kind == "vendor" then mark = mark .. L["|cff99ff99[상인]|r "] end
-                    r.name:SetText(mark .. e.link)
-                    local sv = e.sortVal and format("|cff80d0ff%s|r ", (e.sortVal % 1 == 0) and tostring(e.sortVal) or format("%.1f", e.sortVal)) or ""
-                    if (e.req or 0) > 0 then
-                        r.sub:SetText(sv .. format(L["|cffffd100%d|r |cffaaaaaa· 요구 %d · %s|r"], e.ilvl, e.req,
-                            self:ShortSource(e.rec, e.id)))
+                    local quality = ITEM_QUALITY_COLORS[e.quality] or { r = 0.5, g = 0.6, b = 0.7 }
+                    r.accent:SetColorTexture(quality.r, quality.g, quality.b, 0.85)
+                    r.bg:SetColorTexture(e.upgrade and 0.055 or 0.075, e.upgrade and 0.135 or 0.10, e.upgrade and 0.13 or 0.145, 0.95)
+                    r.name:SetText(e.link)
+                    local comparison
+                    if not e.comparable then comparison = "|cff8ba9c4" .. (e.compareNote or L["참고 장비"]) .. "|r"
+                    elseif (e.baseScore or 0) <= 0 then comparison = "|cff68d9a4" .. L["빈 슬롯"] .. "|r"
                     else
-                        r.sub:SetText(sv .. format(L["|cffffd100%d|r |cffaaaaaa· 요구 없음 · %s|r"], e.ilvl,
-                            self:ShortSource(e.rec, e.id)))
+                        local delta = (e.score - e.baseScore) / e.baseScore * 100
+                        comparison = (e.upgrade and "|cff68d9a4▲ " or "|cff9baabd") .. format("%+.1f%%", delta) .. "|r"
                     end
+                    local badge = e.bis == 2 and " |cffffcf68BiS|r" or (e.bis == 1 and " |cff9baabdBiS*|r" or "")
+                    r.sub:SetText(comparison .. " · " .. (e.sortVal and format(L["정렬 %.1f"], e.sortVal) or format(L["점수 %.1f"], e.score)) .. badge)
+                    local req = (e.req or 0) > 0 and format(L["요구 %d"], e.req) or L["요구 없음"]
+                    r.source:SetText(req .. " · " .. self:ShortSource(e.rec, e.id))
                     r:Show()
                 end
             end

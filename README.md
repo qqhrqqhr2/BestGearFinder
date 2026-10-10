@@ -16,8 +16,8 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **요구 레벨**: 입력칸에 범위(예: 20~35)를 쓰고 `검색`. `자동(현재-10)` 은 현재 레벨 -10 ~ 현재 레벨로 되돌립니다.
 - **필터 ▼** 메뉴: 제작템, 퀘스트 보상, 월드 드랍(저확률), 업그레이드만, 몹 레벨 제한, 다른 직업 전용 숨김, 아이템 등급.
 - **슬롯 제목 클릭**: 그 슬롯을 접거나 펼칩니다. 창 오른쪽 아래 모서리를 끌면 높이를 조절할 수 있고 저장됩니다.
-- **[BiS] 표시**: 레벨 30 BiS 목록의 1순위 아이템입니다. BiS 목록에 있는 아이템은 점수보다 먼저 나오며, 마우스를 올리면 1순위인지 대안인지 표시됩니다.
-- **아이템 검색** 버튼(`/bgf find 이름`): 이름·보스, 요구 레벨, 등급, 획득처, 경매장 식 분류(무기/방어구/방패/성물/등/목걸이/반지/장신구)로 전체 아이템을 검색합니다.
+- **[BiS] 표시**: 레벨 30 BiS 목록의 1순위 아이템입니다. 기본은 역할별 추정 점수순이며, 정렬 메뉴에서 **30레벨 BiS 우선**을 선택할 수 있습니다. BiS 표시만으로 업그레이드라고 판정하지 않습니다.
+- **아이템 검색** 버튼(`/bgf find 이름`): 이름·보스, 요구 레벨, 등급, 획득처, 경매장 식 분류(무기/방어구/방패/성물/등/목걸이/반지/장신구)로 전체 아이템을 검색합니다. 창 열기·조건 변경 시 자동 검색하고, 기존 데이터의 결과부터 보여줍니다. 중지·닫기는 예약된 검색을 취소합니다. 최대 150개 결과를 표시합니다.
 - **내 캐릭터 ▼** 드롭다운: 다른 직업의 추천 장비를 봅니다(보기 전용). 창 오른쪽 위 **투명도** 슬라이더로 배경 투명도를 조절합니다.
 - **아이템 클릭**: Shift+클릭은 채팅창에 아이템 링크 넣기, Ctrl+클릭은 착용 미리보기입니다.
 - **하단 상태줄**: 확인된 아이템 수를 보여줍니다. 게임에 없는 아이템은 "제외"로 표시되며, 마우스를 올리면 자세한 설명이 나옵니다.
@@ -49,9 +49,9 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 
 ### 알아두기
 - 점수는 직업·역할별 스탯 가중치로 계산한 추정치입니다. 정확한 시뮬레이션이 아닙니다.
-- 보스·몬스터 이름은 DB에 한글이 없어 영어로 표시됩니다.
+- 보스·몬스터 이름은 한국어 선택 시 내장 한글 사전을 사용하며, 번역이 없는 이름은 영어로 표시됩니다.
 - 1.12 데이터에서는 상인이 파는 장비가 출처에 포함되지 않습니다. 일부 Forever 전용 아이템은 상인·퀘스트·드랍 출처가 함께 들어 있습니다.
-- 1.12 DB에 없는 Forever 신규 장비는 게임에서 직접 찾아 `[신규]`로 표시합니다. 어디서 나오는지 알 수 없는 경우가 많습니다. 처음 한 번 몇 초 걸리고, 게임 빌드가 바뀔 때까지 결과를 저장해 둡니다.
+- 1.12 DB에 없는 Forever 신규 장비는 게임에서 직접 찾아 `[신규]`로 표시합니다. 최초 전체 탐색은 오래 걸릴 수 있으며 게임 빌드가 바뀔 때까지 결과를 저장합니다. 획득처가 확인되지 않은 아이템도 있습니다.
 
 ---
 
@@ -67,7 +67,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - **Required level**: type a range (e.g. 20-35) and press `Search`. `Auto (Lv-10)` resets to your level -10 ~ your level.
 - **Filters ▼** menu: crafting, quest rewards, world drops (low chance), upgrades only, mob level limit, hide other-class items, item quality.
 - **Click a slot title** to collapse / expand it. Drag the bottom-right corner to resize the height (saved).
-- **[BiS] marker**: the top pick on the level 30 BiS list (PvE). Items on the BiS list are shown before the rest; hover to see whether it is the top pick or an alternative.
+- **[BiS] marker**: the top pick on the level 30 BiS list (PvE). Recommendations default to role score order; select **Level 30 BiS first** to prioritize the list. A BiS marker alone does not mean an item is an upgrade.
 - **Click an item**: Shift+click inserts its link into chat, Ctrl+click opens the dressing-room preview.
 - **Status line** (bottom): shows how many items were found. Items that do not exist in this game version are reported as skipped; hover for details.
 - Filter option **Known sources only** hides unknown-source [New] items and low-chance world drops. [New] items are always listed below items with known sources.
@@ -98,9 +98,9 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 
 ### Notes
 - Scores are estimates from per-class/role stat weights, not a simulation.
-- Boss and creature names are English (the source DB has no Korean names).
+- Boss and creature names use the bundled Korean dictionary when Korean is selected; names without a translation remain in English.
 - In the 1.12 data, vendor-sold gear is not included as a source. Some Forever-only items have vendor / quest / drop sources in the bundled Forever data.
-- Forever gear that is not in the 1.12 database is found directly in the game client and marked `[New]`; where it comes from may be unknown. The search takes a few seconds once and is cached until the game build changes.
+- Forever gear that is not in the 1.12 database is found directly in the game client and marked `[New]`; its source may be unknown. First-time discovery can take time and is cached until the game build changes.
 
 ---
 
@@ -115,12 +115,24 @@ Forever data (not in 1.12):
 - `tools/extract_item_sources.py` → `ItemSources.lua` (gear sources noted on guide pages: quest rewards with faction, dungeon drops, vendors, rares, PvP sets)
 - `tools/extract_names.py --pages <dungeon pages> --drg <Dungeon Route Guide Data.lua>` → `NamesKO.lua` (Korean boss / zone names)
 
-## Releasing (CurseForge)
-Releases are automated with GitHub Actions + the BigWigs packager.
-1. Commit changes to `main` and test in game.
-2. On GitHub: Releases → Draft a new release → create a tag such as `v1.0.1` (use `-beta` in the tag for a beta) → Publish.
-3. The workflow packages the addon and uploads it to CurseForge (`X-Curse-Project-ID`).
-Secret required: `CF_API_KEY`.
+## Releasing (GitHub / CurseForge)
+Releases are automated by `.github/workflows/release.yml` using the BigWigs packager.
+
+1. Test the changes in game. Keep `## Version: @project-version@` in `BestGearFinder.toc`.
+2. Add a section such as `## 1.0.10` at the top of `CHANGELOG.md`, using the existing short bullet-point style. Commit the changelog and addon changes together.
+3. Merging or pushing that commit to `main` starts the workflow. It reads the first version heading, creates `v1.0.10`, and dispatches the workflow for that tag.
+4. The tag run builds the installable `BestGearFinder` ZIP and publishes to GitHub and CurseForge (project `1728236`). `.pkgmeta` uses `CHANGELOG.md` for both release notes.
+5. Verify both the branch and tag workflow runs, the GitHub ZIP, and the CurseForge file status.
+
+For a beta, run the workflow manually on a reviewed branch with the `beta` input checked. This creates a tag such as `v1.0.10-beta`. Adding a beta suffix to the changelog heading alone does **not** select beta: the version parser reads only the numeric version. Avoid merging a new changelog version to `main` until ready for a normal release.
+
+Secrets: `CF_API_KEY` for CurseForge; the workflow uses `GITHUB_TOKEN` for GitHub. An existing release for the selected tag is skipped. If a tag exists without a release, the current workflow replaces that tag before retrying.
+
+### 한국어 배포 안내
+- `CHANGELOG.md` 맨 위에 `## 1.0.10`처럼 버전 제목과 짧은 변경 항목을 추가합니다. 수정 코드와 변경 내역을 같은 커밋에 포함합니다.
+- `main`에 반영하면 워크플로가 버전 태그를 만들고 GitHub·CurseForge에 자동 배포합니다. `.toc`의 `@project-version@`은 패키저가 실제 버전으로 치환합니다.
+- 베타는 검토한 브랜치에서 워크플로를 수동 실행하며 `beta`를 선택합니다. 변경 내역 제목에만 `-beta`를 붙이면 정식 배포가 될 수 있습니다.
+- 배포 전 게임 내 동작을 확인하고, 배포 후 태그 워크플로 성공·GitHub ZIP·CurseForge 파일 상태를 확인합니다.
 
 Support: https://buymeacoffee.com/qqhrqqhr2
 

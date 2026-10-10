@@ -1,5 +1,15 @@
 # Changelog - Best Gear Finder
 
+## 1.0.10
+- Faster item search: prioritize search requests, reuse cached information and show known items before new-item discovery finishes. Pending requests no longer cause the search to end early.
+- Item search runs automatically when opened or when filters change; stopping or closing it cancels queued search work.
+- Recommendation scores are reused; item-info events invalidate only the affected item's cached stats and score.
+- Fixed cloth gear being excluded for druids, negative stat-difference rounding, delayed item information and class/source search filters.
+- Recommendations now default to score order; level 30 BiS priority remains optional. A BiS marker no longer falsely marks a lower-scoring item as an upgrade.
+- Two-handed weapons compare against the total score of the equipped main-hand and off-hand. Switching to a one-handed setup is marked for a weapon-combination check.
+- Updated recommendation and search windows with clearer cards separating item names, comparison scores and sources.
+- Scores and displayed percentage changes are estimates; first-time discovery may still take time. Search results remain limited to 150 items.
+
 ## 1.0.9
 - Item search: searching again no longer drops items whose info had not arrived yet (they were wrongly given up on).
 - Many more gear sources: quest rewards (with faction), dungeon drops, vendors, rares, world drops and PvP sets collected from the guide pages. Korean names for quests, bosses and vendors.

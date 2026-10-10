@@ -13,8 +13,8 @@ Open the window and see, slot by slot, the best items you can equip at your leve
 - Tooltips show the **source** (dungeon, boss, quest, profession) and the **drop chance**
 - Numeric **required-level range** (e.g. 20-35) plus a Search button to refresh after you change gear
 - **Upgrades only** mode compares against what you have equipped
-- **[BiS] marker** for the top pick on the level 30 BiS list (PvE); BiS items are listed first, and tooltips show how the item differs from what you wear
-- **Item search window**: search all items by name/boss, level, quality, source and an auction-house style category tree
+- **[BiS] marker** for the top pick on the level 30 BiS list (PvE); recommendations default to role score order, with optional BiS priority. Tooltips show how the item differs from what you wear
+- **Item search window**: search by name/boss, level, quality, source and an auction-house style category tree. Opening the window or changing filters searches automatically, showing known items first (up to 150 results)
 - View other classes with the "My character" dropdown; background opacity sliders
 - **New Forever items** that are not in the Classic database are found in the game client and marked [New] (source unknown)
 - A draggable on-screen icon opens the window with one click
@@ -33,7 +33,7 @@ Open the window and see, slot by slot, the best items you can equip at your leve
 - `/bgf diag` - diagnostics, `/bgf donate` - support link
 
 ### Data
-All item, loot, crafting, quest and vendor data is generated offline from the CMaNGOS classic-db (1.12.x) plus bundled Forever-specific sources, and shipped with the addon. No other addon is required. Boss and creature names are shown in English.
+All item, loot, crafting, quest and vendor data is generated offline from the CMaNGOS classic-db (1.12.x) plus bundled Forever-specific sources, and shipped with the addon. No other addon is required. Boss and creature names use the bundled Korean dictionary when Korean is selected; untranslated names remain in English.
 
 ---
 
@@ -48,8 +48,8 @@ All item, loot, crafting, quest and vendor data is generated offline from the CM
 - 툴팁에 **획득처**(던전, 보스, 퀘스트, 전문기술)와 **드랍률** 표시
 - **요구 레벨 범위**를 숫자로 입력(예: 20-35), 장비를 바꾼 뒤에는 검색 버튼으로 새로고침
 - **업그레이드만** 보기: 현재 착용 장비와 비교
-- 레벨 30 BiS 목록(PvE)의 1순위에 **[BiS]** 표시, BiS 아이템을 먼저 보여주고 툴팁에 현재 장비와의 차이를 표시
-- **아이템 검색 창**: 이름·보스, 레벨, 등급, 획득처, 경매장 식 분류로 전체 아이템 검색
+- 레벨 30 BiS 목록(PvE)의 1순위에 **[BiS]** 표시. 기본은 역할별 점수순이며 BiS 우선 정렬을 선택할 수 있고, 툴팁에 현재 장비와의 차이를 표시
+- **아이템 검색 창**: 이름·보스, 레벨, 등급, 획득처, 경매장 식 분류로 검색. 창 열기·조건 변경 시 자동 검색하며 기존 데이터부터 최대 150개 결과 표시
 - "내 캐릭터" 드롭다운으로 다른 직업의 추천 보기, 배경 투명도 슬라이더
 - 슬롯당 표시 개수(2~10)를 드롭다운으로 선택
 - 슬롯 제목을 눌러 접기, 오른쪽 아래 모서리로 높이 조절, Shift+클릭으로 채팅창에 링크
@@ -67,7 +67,7 @@ All item, loot, crafting, quest and vendor data is generated offline from the CM
 - `/bgf 진단` - 진단, `/bgf 후원` - 후원 링크
 
 ### 데이터
-아이템, 드랍, 제작, 퀘스트, 상인 데이터는 CMaNGOS classic-db(1.12.x)와 Forever 전용 출처 데이터를 미리 추출해 애드온에 포함했습니다. 다른 애드온이 필요 없습니다. 보스·몬스터 이름은 영어로 표시됩니다.
+아이템, 드랍, 제작, 퀘스트, 상인 데이터는 CMaNGOS classic-db(1.12.x)와 Forever 전용 출처 데이터를 미리 추출해 애드온에 포함했습니다. 다른 애드온이 필요 없습니다. 보스·몬스터 이름은 한국어 선택 시 내장 한글 사전을 사용하며, 번역이 없는 이름은 영어로 표시됩니다.
 
 ---
 
