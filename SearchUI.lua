@@ -4,7 +4,7 @@ local ADDON, ns = ...
 local L = ns.L
 
 local W, H = 780, 640
-local ROW_H, MAX_ROWS = 22, 150
+local ROW_H, MAX_ROWS = 40, 150
 local win, listChild, countText, noteText, nameBox, minBox, maxBox, mineChk
 local rows = {}
 local CatMatch
@@ -23,6 +23,11 @@ local token = 0
 local running = false
 local lastPending, lastChange = -1, 0
 local refreshQueued = false
+local searchEpoch, searchCo = 0, nil
+local resolved = {}
+local function SearchYield()
+    if debugprofilestop() - ns.searchBudgetStart >= 4 then coroutine.yield() end
+end
 local searchBtn, qualChecks, noReqChk = nil, {}, nil
 local bar
 local expanded = {}   -- 분류 트리에서 펼친 항목 (창을 다시 만들어도 유지)
@@ -91,21 +96,25 @@ local function GetRow(i)
     r:SetPoint("TOPRIGHT", 0, -(i - 1) * ROW_H)
     r:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
     r.icon = r:CreateTexture(nil, "ARTWORK")
-    r.icon:SetSize(18, 18)
-    r.icon:SetPoint("LEFT", 2, 0)
+    local bg = r:CreateTexture(nil, "BACKGROUND")
+    bg:SetPoint("TOPLEFT", 0, 0); bg:SetPoint("BOTTOMRIGHT", 0, 2)
+    bg:SetColorTexture(0.075, 0.10, 0.145, 0.95)
+    r.icon:SetSize(28, 28)
+    r.icon:SetPoint("TOPLEFT", 8, -5)
+    r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     r.name = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    r.name:SetPoint("LEFT", r.icon, "RIGHT", 4, 0)
-    r.name:SetWidth(190)
+    r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 8, 0)
+    r.name:SetPoint("TOPRIGHT", r, "TOPRIGHT", -126, -5)
     r.name:SetJustifyH("LEFT")
     r.name:SetWordWrap(false)
     r.info = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    r.info:SetPoint("LEFT", r.name, "RIGHT", 4, 0)
-    r.info:SetWidth(150)
-    r.info:SetJustifyH("LEFT")
+    r.info:SetPoint("TOPRIGHT", -8, -5)
+    r.info:SetWidth(114)
+    r.info:SetJustifyH("RIGHT")
     r.info:SetWordWrap(false)
     r.src = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    r.src:SetPoint("LEFT", r.info, "RIGHT", 4, 0)
-    r.src:SetPoint("RIGHT", -4, 0)
+    r.src:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -5)
+    r.src:SetPoint("TOPRIGHT", r.info, "BOTTOMRIGHT", 0, -5)
     r.src:SetJustifyH("LEFT")
     r.src:SetWordWrap(false)
     r:SetScript("OnEnter", function(self)
@@ -174,7 +183,7 @@ local function SrcMatch(rec, set)
     if next(set) == nil then return true end
     for key in pairs(set) do
         if key == "unknown" then
-            if rec.new or rec.kinds.unknown or next(rec.kinds) == nil then return true end
+            if rec.kinds.unknown or next(rec.kinds) == nil then return true end
         elseif rec.kinds[key] then
             return true
         end
@@ -184,7 +193,7 @@ end
 
 local function HasQuality() return next(filter.q) ~= nil end
 local function HasFilter(minL, maxL)
-    return filter.text ~= "" or HasQuality() or filter.cat or next(filter.src) or minL or maxL
+    return filter.text ~= "" or HasQuality() or filter.cat or next(filter.src) or filter.mine or minL or maxL
 end
 local function SetRunning(v)
     running = v
@@ -205,10 +214,14 @@ local function Schedule(delay)
     end)
 end
 
-function Run()
+local function SearchPass()
     if not win or not win:IsShown() or not running then return end
-    for _, r in ipairs(rows) do r:Hide() end
-    if ns.indexState ~= "done" then
+    if ns.indexState == "empty" then
+        noteText:SetText(L["검색 결과가 없습니다."])
+        SetRunning(false)
+        return
+    end
+    if ns.indexState ~= "done" and not ns.indexBaseReady then
         ns:EnsureIndex()
         countText:SetText("")
         noteText:SetText(L["아이템 정보를 불러오는 중입니다..."])
@@ -223,7 +236,7 @@ function Run()
         return
     end
     local text = filter.text
-    local pending, results, cand = 0, {}, 0
+    local pending, results, cand, waitingQueue, unavailable = 0, {}, 0, false, 0
     for id, rec in pairs(ns.index) do
         if rec then
             local ok = true
@@ -232,13 +245,22 @@ function Run()
             if ok and filter.mine and not ns:UsableByActive(rec) then ok = false end
             if ok then
                 cand = cand + 1
-                local name, link, quality, ilvl, req, _, _, _, _, icon = ns.GetItemInfoC(id)
+                local cached = resolved[id]
+                if cached ~= nil then
+                    if cached then results[#results + 1] = cached end
+                else
+                local name, link, quality, ilvl, req, _, _, _, _, icon = ns:GetCachedItemInfo(id)
                 if not name then
-                    pending = pending + 1
-                    ns:RequestItem(id)
+                    if ns:RequestItem(id) then
+                        pending = pending + 1
+                        if ns:IsItemQueued(id) then waitingQueue = true end
+                    else
+                        unavailable = unavailable + 1
+                    end
                 else
                     local good = true
                     if HasQuality() and not filter.q[quality or 0] then good = false end
+                    if good and filter.mine and not ns:UsableByActive(rec, id) then good = false end
                     if good and not (filter.noReq and (req or 0) == 0) then
                         if minL and (req or 0) < minL then good = false end
                         if good and maxL and (req or 0) > maxL then good = false end
@@ -252,14 +274,20 @@ function Run()
                         end
                         good = hit and true or false
                     end
+                    resolved[id] = false
                     if good then
-                        results[#results + 1] = { id = id, rec = rec, name = name, link = link, quality = quality or 1,
-                                                  ilvl = ilvl or 0, req = req or 0, icon = icon or rec.icon }
+                        local result = { id = id, rec = rec, name = name, link = link, quality = quality or 1,
+                                         ilvl = ilvl or 0, req = req or 0, icon = icon or rec.icon }
+                        resolved[id] = result
+                        results[#results + 1] = result
                     end
+                end
                 end
             end
         end
+        SearchYield()
     end
+    for _, r in ipairs(rows) do r:Hide() end
     table.sort(results, function(a, b)
         if a.req ~= b.req then return a.req > b.req end
         if a.quality ~= b.quality then return a.quality > b.quality end
@@ -274,8 +302,8 @@ function Run()
         r.icon:SetTexture(d.icon)
         local col = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[d.quality]
         r.name:SetText(((col and type(col.hex) == "string" and col.hex) or "|cffffffff") .. d.name .. "|r")
-        r.info:SetText(format("%s %d · %s %d · %s", L["요구"], d.req, "ilvl", d.ilvl, KindName(d.rec.classID, d.rec.subID)))
-        r.src:SetText(ns.ShortSource and ns:ShortSource(d.rec, d.id) or "")
+        r.info:SetText(format("%s %d · ilvl %d", L["요구"], d.req, d.ilvl))
+        r.src:SetText(KindName(d.rec.classID, d.rec.subID) .. " · " .. (ns.ShortSource and ns:ShortSource(d.rec, d.id) or ""))
         r:Show()
     end
     listChild:SetHeight(math.max(1, math.min(total, MAX_ROWS) * ROW_H))
@@ -285,10 +313,15 @@ function Run()
         countText:SetText(format(L["%d개"], total))
     end
     noteText:SetText(pending > 0 and format(L["%d개 불러오는 중..."], pending) or (total == 0 and L["검색 결과가 없습니다."] or ""))
+    if pending == 0 and ns.indexState == "running" then
+        noteText:SetText(L["기존 결과 표시 중 · 신규 아이템 탐색 중..."])
+    elseif pending == 0 and unavailable > 0 then
+        noteText:SetText(format(L["%d개는 불러오지 못해 제외했습니다"], unavailable))
+    end
     -- 로딩바: 불러온 비율 (후보 중 정보가 도착한 아이템)
     if bar then
         if pending > 0 and cand > 0 then
-            bar:SetValue((cand - pending) / cand)
+            bar:SetValue((cand - pending - unavailable) / cand)
             bar:Show()
         else
             bar:Hide()
@@ -298,7 +331,7 @@ function Run()
     local now = GetTime()
     if pending ~= lastPending then lastChange = now end
     lastPending = pending
-    if pending > 0 and now - lastChange < 8 then
+    if ns.indexState == "running" or (pending > 0 and (waitingQueue or now - lastChange < 35)) then
         Schedule(0.7)          -- 아이템 정보가 더 도착하면 갱신 (중지를 누를 때까지)
     else
         if pending > 0 then noteText:SetText(format(L["%d개는 불러오지 못해 제외했습니다"], pending)) end
@@ -306,13 +339,48 @@ function Run()
     end
 end
 
+function Run()
+    if searchCo or not running or not win or not win:IsShown() then return end
+    local epoch = searchEpoch
+    local co = coroutine.create(SearchPass)
+    searchCo = co
+    local function Step()
+        if epoch ~= searchEpoch or not running or not win:IsShown() then
+            if searchCo == co then searchCo = nil end
+            return
+        end
+        ns.searchBudgetStart = debugprofilestop()
+        local ok, err = coroutine.resume(co)
+        if not ok then
+            searchCo = nil
+            SetRunning(false)
+            noteText:SetText(L["검색 중 오류가 발생했습니다. /bgf 진단을 확인하세요."])
+            ns.Print(L["데이터 읽기 오류: "] .. tostring(err))
+        elseif coroutine.status(co) == "dead" then
+            searchCo = nil
+        else
+            C_Timer.After(0, Step)
+        end
+    end
+    Step()
+end
+
 local function StartSearch()
     if not win then return end
+    searchEpoch = searchEpoch + 1
+    searchCo = nil
+    ns:CancelSearchRequests()
+    wipe(resolved)
+    token = token + 1
+    timer = nil
     lastPending, lastChange = -1, GetTime()
     SetRunning(true)
     Schedule(0.01)
 end
 local function StopSearch()
+    searchEpoch = searchEpoch + 1
+    searchCo = nil
+    ns:CancelSearchRequests()
     token = token + 1          -- 예약된 갱신 취소
     SetRunning(false)
     if noteText then
@@ -322,9 +390,10 @@ local function StopSearch()
 end
 
 -- 아이템 정보가 도착하면 (검색창이 열려 있고 불러오는 중일 때) 조금 뒤에 다시 검색
-function ns.OnItemInfo()
+function ns.OnItemInfo(id, success)
     -- 정보가 도착하면 (너무 자주는 말고) 곧바로 목록을 갱신
-    if running and not refreshQueued then
+    if id then resolved[id] = nil end
+    if running and not refreshQueued and not searchCo then
         refreshQueued = true
         C_Timer.After(0.35, function()
             refreshQueued = false
@@ -351,12 +420,13 @@ local function Build()
         tile = true, tileSize = 32, edgeSize = 32,
         insets = { left = 11, right = 12, top = 12, bottom = 11 },
     })
+    if ns.ThemeWindow then ns.ThemeWindow(win) end
     if ns.SolidBG then ns.SolidBG(win) end
     local function ApplyAlpha(a)
         a = math.max(0.3, math.min(1, a or 0.85))
         if win.solidBG then win.solidBG:SetAlpha(a) end
-        if win.SetBackdropColor then win:SetBackdropColor(1, 1, 1, a) end
-        if win.SetBackdropBorderColor then win:SetBackdropBorderColor(1, 1, 1, math.min(1, a + 0.2)) end
+        if win.SetBackdropColor then win:SetBackdropColor(0.035, 0.05, 0.075, a) end
+        if win.SetBackdropBorderColor then win:SetBackdropBorderColor(0.18, 0.25, 0.34, math.min(1, a + 0.2)) end
     end
     ApplyAlpha(ns.db and ns.db.searchAlpha or 0.85)
     win:SetScript("OnDragStart", function(self) self:StartMoving() end)
@@ -416,6 +486,7 @@ local function Build()
     nameBox:SetScript("OnTextChanged", function(self)
         filter.text = string.lower((self:GetText() or ""):match("^%s*(.-)%s*$"))
         UpdateHint()
+        if win:IsShown() and minBox and maxBox then StartSearch() end
     end)
     nameBox:SetScript("OnEditFocusGained", function() nameHint:Hide() end)
     nameBox:SetScript("OnEditFocusLost", UpdateHint)
@@ -434,6 +505,9 @@ local function Build()
         e:SetJustifyH("CENTER")
         e:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
         e:SetScript("OnEnterPressed", function(self) self:ClearFocus(); StartSearch() end)
+        e:SetScript("OnTextChanged", function()
+            if win:IsShown() and minBox and maxBox then StartSearch() end
+        end)
         return e
     end
     minBox = LevelEdit(ll, 14)
@@ -448,7 +522,7 @@ local function Build()
     nrl:SetPoint("LEFT", noReqChk, "RIGHT", 0, 0)
     nrl:SetText(L["레벨 제한 없음 포함"])
     noReqChk:SetChecked(filter.noReq)
-    noReqChk:SetScript("OnClick", function(self) filter.noReq = self:GetChecked() and true or false end)
+    noReqChk:SetScript("OnClick", function(self) filter.noReq = self:GetChecked() and true or false; StartSearch() end)
 
     -- 체크박스 묶음 (등급 / 획득처): 아무것도 안 고르면 전체
     local checkLists = {}
@@ -466,7 +540,7 @@ local function Build()
             cb.label:SetPoint("LEFT", cb, "RIGHT", 0, 0)
             cb.label:SetText(e.label)
             cb:SetChecked(set[e.key] and true or false)
-            cb:SetScript("OnClick", function(self) set[e.key] = self:GetChecked() and true or nil end)
+            cb:SetScript("OnClick", function(self) set[e.key] = self:GetChecked() and true or nil; StartSearch() end)
             checkLists[#checkLists + 1] = { cb = cb, set = set, key = e.key }
         end
         y = y - 26
@@ -487,7 +561,7 @@ local function Build()
     ml:SetPoint("LEFT", mineChk, "RIGHT", 2, 0)
     ml:SetText(L["착용 가능한 아이템만"])
     mineChk:SetChecked(filter.mine)
-    mineChk:SetScript("OnClick", function(self) filter.mine = self:GetChecked() and true or false end)
+    mineChk:SetScript("OnClick", function(self) filter.mine = self:GetChecked() and true or false; StartSearch() end)
 
     searchBtn = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
     searchBtn:SetSize(80, 22)
@@ -592,6 +666,7 @@ local function Build()
                 if n and n.children then expanded[f.key] = not expanded[f.key] end
                 filter.cat, filter.catKey = n, (n and f.key or nil)
                 treeRefresh()
+                StartSearch()
             end)
             b:Show()
         end
@@ -637,7 +712,7 @@ end
 
 function ns:ToggleSearch()
     if not win then Build() end
-    if win:IsShown() then win:Hide() else win:Show() end
+    if win:IsShown() then win:Hide() else win:Show(); StartSearch() end
 end
 
 -- /bgf find <이름>  : 검색창을 열고 바로 검색

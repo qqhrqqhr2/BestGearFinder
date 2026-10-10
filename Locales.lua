@@ -2,6 +2,20 @@
 local ADDON, ns = ...
 
 local en = {
+    ["표시된 %는 추정 점수 변화입니다."] = "The percentage is the change in estimated score.",
+    ["정렬 %.1f"] = "Sort %.1f",
+    ["30레벨 BiS 우선"] = "Level 30 BiS first",
+    ["다른 직업 보기"] = "Other class preview",
+    ["착용 장비 확인 중"] = "Loading equipped gear",
+    ["무기 조합 확인 필요"] = "Check weapon pairing",
+    ["주무기 + 보조 장비 합산 비교"] = "Compared against main hand + off hand",
+    ["참고 장비"] = "Reference gear",
+    ["빈 슬롯"] = "Empty slot",
+    ["점수 %.1f"] = "Score %.1f",
+    ["요구 %d"] = "Req. %d",
+    ["요구 없음"] = "No level req.",
+    ["기존 결과 표시 중 · 신규 아이템 탐색 중..."] = "Showing known results · scanning new items...",
+    ["검색 중 오류가 발생했습니다. /bgf 진단을 확인하세요."] = "Search failed. Check /bgf diag.",
     ["클릭: 열기 / 닫기"] = "Click: open / close",
     ["드래그: 아이콘 옮기기"] = "Drag: move this icon",
     ["/bgf icon : 아이콘 숨기기 / 보이기"] = "/bgf icon : hide / show this icon",
