@@ -16,6 +16,7 @@ ns.NamesKO = {
         ["An Ancient Grudge"] = "해묵은 원한",
         ["Ancient Stone Keeper"] = "고대 바위 문지기",
         ["Arcane Anomaly"] = "비전 변형물",
+        ["Arcanic Enigma"] = "신비한 수수께끼",
         ["Arcanist Doan"] = "신비술사 도안",
         ["Archaedas"] = "아카에다스",
         ["Archmage Arugal"] = "대마법사 아루갈",

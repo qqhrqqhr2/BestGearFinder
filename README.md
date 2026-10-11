@@ -15,6 +15,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - 창을 열면 내 직업·레벨 기준으로 슬롯별 추천 장비가 역할(딜/탱/힐)별로 가로로 나란히 나옵니다.
 - **요구 레벨**: 입력칸에 범위(예: 20~35)를 쓰고 `검색`. `자동(현재-10)` 은 현재 레벨 -10 ~ 현재 레벨로 되돌립니다.
 - **필터 ▼** 메뉴: 제작템, 퀘스트 보상, 월드 드랍(저확률), 업그레이드만, 몹 레벨 제한, 다른 직업 전용 숨김, 아이템 등급.
+- 퀘스트 보상 추천은 알려진 최소 수락 레벨을 확인합니다. 현재 레벨·선택 범위에서 수락할 수 없는 퀘스트만 획득처로 가진 장비는 제외하며, 보유한 장비는 기존 착용·추천 조건에 따라 비교합니다. 아이템 검색에서는 전체 참고 정보를 볼 수 있습니다.
 - **슬롯 제목 클릭**: 그 슬롯을 접거나 펼칩니다. 창 오른쪽 아래 모서리를 끌면 높이를 조절할 수 있고 저장됩니다.
 - **[BiS] 표시**: 레벨 30 BiS 목록의 1순위 아이템입니다. 기본은 역할별 추정 점수순이며, 정렬 메뉴에서 **30레벨 BiS 우선**을 선택할 수 있습니다. BiS 표시만으로 업그레이드라고 판정하지 않습니다.
 - **아이템 검색** 버튼(`/bgf find 이름`): 이름·보스, 요구 레벨, 등급, 획득처, 경매장 식 분류(무기/방어구/방패/성물/등/목걸이/반지/장신구)로 전체 아이템을 검색합니다. 창 열기·조건 변경 시 자동 검색하고, 기존 데이터의 결과부터 보여줍니다. 중지·닫기는 예약된 검색을 취소합니다. 최대 150개 결과를 표시합니다.
@@ -66,6 +67,7 @@ WoW Forever 용 장비 추천 애드온 / Gear recommendation addon for WoW Fore
 - The window shows the best gear for your class and level per slot, with DPS / Tank / Heal columns side by side.
 - **Required level**: type a range (e.g. 20-35) and press `Search`. `Auto (Lv-10)` resets to your level -10 ~ your level.
 - **Filters ▼** menu: crafting, quest rewards, world drops (low chance), upgrades only, mob level limit, hide other-class items, item quality.
+- Quest recommendations check known minimum acceptance levels against the character and selected range. Owned gear remains subject to existing equip/recommendation filters; item search continues to show reference data.
 - **Click a slot title** to collapse / expand it. Drag the bottom-right corner to resize the height (saved).
 - **[BiS] marker**: the top pick on the level 30 BiS list (PvE). Recommendations default to role score order; select **Level 30 BiS first** to prioritize the list. A BiS marker alone does not mean an item is an upgrade.
 - **Click an item**: Shift+click inserts its link into chat, Ctrl+click opens the dressing-room preview.
@@ -139,3 +141,4 @@ Support: https://buymeacoffee.com/qqhrqqhr2
 ## Credits / Licenses
 - Item and loot data: CMaNGOS classic-db (GPL-3.0).
 - Level 30 BiS lists (PvE): bundled as item IDs for the BiS marker.
+

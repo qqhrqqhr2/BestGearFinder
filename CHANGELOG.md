@@ -1,5 +1,13 @@
 # Changelog - Best Gear Finder
 
+## 1.0.11
+- Updated level 30 BiS lists for all nine classes, including replacement picks for the changed Magram and Gelkis rewards.
+- Added sources for Mindslicer, Beggar's Leggings and Seadog's Battered Cuffs; corrected their faction and selected/additional reward types.
+- Updated known quest minimum levels. Recommendations now exclude rewards whose only enabled quest sources require a higher level than the character or selected range.
+- Owned rewards can still be compared subject to the existing equip-level and recommendation filters. Other available sources keep an item eligible; item search still shows reference data.
+- Corrected three Dalaran drops to Arcanic Enigma and added its Korean name.
+- Refresh recommendations when bag contents change.
+
 ## 1.0.10
 - Faster item search: prioritize search requests, reuse cached information and show known items before new-item discovery finishes. Pending requests no longer cause the search to end early.
 - Item search runs automatically when opened or when filters change; stopping or closing it cancels queued search work.
@@ -87,3 +95,4 @@
 - Finds new Forever items missing from the 1.12 database in the game client (marked [New], source unknown).
 - Draggable on-screen launcher icon (position is saved).
 - English and Korean UI (follows the game client language).
+

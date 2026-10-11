@@ -45,6 +45,7 @@ local qdone = {}   -- 완료한 퀘스트 캐시 (계산할 때마다 초기화)
 local GetItemInfoInstantC = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
 local GetItemInfoC = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 local GetItemStatsC = (C_Item and C_Item.GetItemStats) or GetItemStats
+local GetItemCountC = (C_Item and C_Item.GetItemCount) or GetItemCount
 
 local function Print(msg) DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99Best Gear Finder|r " .. tostring(msg)) end
 ns.Print = Print
@@ -147,6 +148,16 @@ local CLASS_BIT = { WARRIOR = 1, PALADIN = 2, HUNTER = 4, ROGUE = 8, PRIEST = 16
 local function HasBit(mask, bitv)
     return (mask == 0) or not bitv or (math.floor(mask / bitv) % 2 == 1)
 end
+local function QuestInfo(qid)
+    return ns.ItemSources and ns.ItemSources.questInfo and ns.ItemSources.questInfo[qid]
+end
+local function QuestMinLevel(qid, fallback)
+    local info = QuestInfo(qid)
+    if info and type(info.minLevel) == "number" then return info.minLevel end
+    local q = qid and ns.QUESTS and ns.QUESTS[qid]
+    return (q and q[3]) or fallback or 0
+end
+ns.QuestMinLevel = QuestMinLevel
 local function IndexQuests()
     local Q = ns.QUESTS
     local st = ns.indexStats
@@ -175,7 +186,11 @@ local function IndexQuests()
                     end
                     if rec then
                         if not rec.kinds.quest then st.quest = st.quest + 1 end
-                        AddSource(rec, q[1], "", nil, "quest", nil, { qid = qid, ql = q[2], ml = q[3], choice = (pass == 1) })
+                        local info = QuestInfo(qid)
+                        AddSource(rec, (info and info.title) or q[1], "", nil, "quest", nil, {
+                            qid = qid, ql = (info and info.level) or q[2], ml = QuestMinLevel(qid, q[3]),
+                            choice = (pass == 1), titleEn = (info and info.titleEn) or q[1],
+                        })
                     end
                 end
             end
@@ -344,7 +359,12 @@ local function IndexForeverExtra()
                 if q and not (HasBit(q[4], qcbit) and HasBit(q[5], qrbit)) then return end
                 if not SideOK(e) then return end
                 if not (onlyNew and rec.kinds.quest) then
-                    AddSource(rec, e.title, "", nil, "quest", nil, { qid = e.qid, ql = e.lvl, ml = 0, choice = false, learned = learned, titleEn = e.titleEn })
+                    local info = QuestInfo(e.qid)
+                    AddSource(rec, (info and info.title) or e.title, "", nil, "quest", nil, {
+                        qid = e.qid, ql = (info and info.level) or (q and q[2]) or e.lvl,
+                        ml = QuestMinLevel(e.qid, e.minLevel), choice = e.choice == true,
+                        learned = learned, titleEn = (info and info.titleEn) or e.titleEn,
+                    })
                 end
             end)
             Each(X.vendors, function(rec, e)
@@ -802,6 +822,7 @@ function ns:Compute()
     if not rules then return end
     local level = UnitLevel("player")
     local minReq, maxReq = self:GetRange()
+    local sourceLevel = math.min(level, maxReq)
     wipe(qdone)
     local armorType = GetArmorType(rules, level)
     local dwOK = rules.dualWield and level >= (ns.DUAL_WIELD_LEVEL[class] or 99) or false
@@ -813,7 +834,7 @@ function ns:Compute()
     local cand, ready, pending, skipped = 0, 0, 0, 0
     local errCount, firstErr = 0, nil
     local function handle(id, rec)
-        if rec and ns:SourceAllowed(rec) and Usable(rec, rules, armorType, dwOK)
+        if rec and ns:SourceAllowed(rec, id, sourceLevel) and Usable(rec, rules, armorType, dwOK)
            and not (db.mobCut and rec.minLvl and not ((rec.kinds.craft and db.crafting) or (rec.kinds.quest and db.quests)) and rec.minLvl > maxReq + 8) then
             cand = cand + 1
             local name, link, quality, ilvl, reqLevel
@@ -1008,9 +1029,22 @@ end
 ns.SrcAllowed = SrcAllowed
 ns.searchText = ""
 
-function ns:SourceAllowed(rec)
+function ns:SourceAllowed(rec, id, level)
+    if not level then
+        local _, maxReq = self:GetRange()
+        level = math.min(UnitLevel("player") or maxReq, maxReq)
+    end
+    local enabled = false
     for _, s in ipairs(rec.src) do
-        if SrcAllowed(s) then return true end
+        if SrcAllowed(s) then
+            enabled = true
+            if s.kind ~= "quest" or QuestMinLevel(s.qid, s.ml) <= level then return true end
+        end
+    end
+    -- 이미 가진 보상은 수락 제한과 별개로 비교하되, 착용 제한은 후보 수집에서 검사한다.
+    if enabled and id and GetItemCountC then
+        local ok, count = pcall(GetItemCountC, id, false)
+        return ok and type(count) == "number" and count > 0
     end
     return false
 end
@@ -1128,7 +1162,8 @@ function ns:FormatSource0(s)
         return t
     elseif s.kind == "quest" then
         local t = L["퀘스트: "] .. self:QuestTitle(s) .. " (Lv." .. (s.ql or "?")
-        if s.ml and s.ml > 0 then t = t .. L[", 수락 Lv."] .. s.ml end
+        local minimum = QuestMinLevel(s.qid, s.ml)
+        if minimum > 0 then t = t .. L[", 수락 Lv."] .. minimum end
         return t .. ") · " .. (s.choice and L["선택 보상"] or L["확정 보상"])
     end
     if s.kind == "vendor" then
@@ -1406,6 +1441,7 @@ ev:RegisterEvent("PLAYER_REGEN_ENABLED")
 -- 클라이언트에 없는 이벤트일 수 있으므로 보호해서 등록
 pcall(ev.RegisterEvent, ev, "QUEST_TURNED_IN")
 pcall(ev.RegisterEvent, ev, "QUEST_DATA_LOAD_RESULT")
+pcall(ev.RegisterEvent, ev, "BAG_UPDATE_DELAYED")
 ev:SetScript("OnEvent", function(_, event, arg1, arg2)
     if event == "ADDON_LOADED" then
         if arg1 == ADDON then InitDB() end
@@ -1422,7 +1458,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
         ns:ScheduleUIUpdate()
     elseif event == "PLAYER_LEVEL_UP" then
         C_Timer.After(0.5, function() ns:Refresh(true) end)
-    elseif event == "PLAYER_EQUIPMENT_CHANGED" then
+    elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "BAG_UPDATE_DELAYED" then
         ns:ScheduleRefresh(0.3)
     elseif event == "PLAYER_REGEN_ENABLED" then
         if ns.indexState == "idle" or ns.indexState == "empty" then ns:Refresh(true) end
@@ -1470,7 +1506,7 @@ SlashCmdList["BESTGEARFINDER"] = function(msg)
             P(("src kind=%s inst=%s allowed=%s%s"):format(tostring(sr.kind), tostring(sr.inst), tostring(SrcAllowed(sr)),
                 sr.qid and (" qid=" .. sr.qid .. " done=" .. tostring(QuestDone(sr.qid))) or ""))
         end
-        P("sourceAllowed=" .. tostring(ns:SourceAllowed(rec)) .. " usable=" .. tostring(Usable(rec, rules, GetArmorType(rules, level), dw)))
+        P("sourceAllowed=" .. tostring(ns:SourceAllowed(rec, id)) .. " usable=" .. tostring(Usable(rec, rules, GetArmorType(rules, level), dw)))
         local name, _, quality, ilvl, req = GetItemInfoC(id)
         P(("name=%s quality=%s ilvl=%s req=%s inRange=%s range=%d-%d"):format(tostring(name), tostring(quality), tostring(ilvl), tostring(req), tostring(name and InRange(req, minReq, maxReq, ilvl, ns:IsAnyBis(id))), minReq, maxReq))
         do
