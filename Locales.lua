@@ -2,6 +2,8 @@
 local ADDON, ns = ...
 
 local en = {
+    ["접기"] = "Collapse",
+    ["펼치기"] = "Expand",
     ["표시된 %는 추정 점수 변화입니다."] = "The percentage is the change in estimated score.",
     ["정렬 %.1f"] = "Sort %.1f",
     ["30레벨 BiS 우선"] = "Level 30 BiS first",

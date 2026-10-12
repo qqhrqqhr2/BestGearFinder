@@ -6,7 +6,7 @@ local FRAME_H = 604
 local MIN_FRAME_W = 800      -- 위쪽 버튼 줄(필터·정렬 … 후원)이 겹치지 않는 최소 폭
 local COL_MIN_W = 236
 local SIDE_PAD = 56          -- 스크롤바/여백 합계
-local ROW_H, HEADER_H = 62, 26
+local ROW_H, HEADER_H = 62, 32
 
 local rows, headers, colHeaders, dividers, hbtns = {}, {}, {}, {}, {}
 local qualChk, menuChecks, chanceEdit = {}, {}, nil
@@ -132,6 +132,44 @@ local function CreateHeader(i)
     h:SetJustifyH("LEFT")
     headers[i] = h
     return h
+end
+
+local function CreateSlotHeader(i)
+    local b = CreateFrame("Button", nil, child)
+    b:RegisterForClicks("LeftButtonUp")
+    b.bg = b:CreateTexture(nil, "BACKGROUND")
+    b.bg:SetAllPoints()
+    b.bg:SetColorTexture(0.075, 0.12, 0.18, 0.96)
+    b.highlight = b:CreateTexture(nil, "HIGHLIGHT")
+    b.highlight:SetAllPoints()
+    b.highlight:SetColorTexture(0.20, 0.36, 0.48, 0.35)
+    b.indicator = b:CreateTexture(nil, "ARTWORK")
+    b.indicator:SetSize(18, 18)
+    b.indicator:SetPoint("LEFT", 6, 0)
+    b.action = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    b.action:SetPoint("RIGHT", -10, 0)
+    b.action:SetWidth(70)
+    b.action:SetJustifyH("RIGHT")
+    b.label = b:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    b.label:SetPoint("LEFT", b.indicator, "RIGHT", 6, 0)
+    b.label:SetPoint("RIGHT", b.action, "LEFT", -10, 0)
+    b.label:SetJustifyH("LEFT")
+    b.label:SetWordWrap(false)
+    b.label:SetTextColor(0.72, 0.84, 0.94)
+    b:SetScript("OnClick", function(btn)
+        if not btn.key or not ns.db then return end
+        ns.db.collapsed = ns.db.collapsed or {}
+        ns.db.collapsed[btn.key] = not ns.db.collapsed[btn.key] or nil
+        ns:UpdateUI()
+    end)
+    b:SetScript("OnEnter", function(btn)
+        GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(L["클릭하면 이 슬롯을 접거나 펼칩니다."], 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    hbtns[i] = b
+    return b
 end
 
 local function BuildFrame()
@@ -782,34 +820,12 @@ function ns:UpdateUI()
     local y, hdrN, ri = 0, 0, 0
     for _, band in ipairs(drawBands) do
         hdrN = hdrN + 1
-        local h = headers[hdrN] or CreateHeader(hdrN)
-        h:SetWordWrap(false)
-        h:SetTextColor(0.60, 0.72, 0.85)
-        h:ClearAllPoints()
-        h:SetPoint("TOPLEFT", child, "TOPLEFT", 4, -y - 2)
-        h:SetWidth(colW * nCols - 8)
         local collapsed = self.db.collapsed and self.db.collapsed[band.group.key]
-        h:SetText((collapsed and "+ " or "- ") .. band.group.label)
-        h:Show()
-        local hb = hbtns[hdrN]
-        if not hb then
-            hb = CreateFrame("Button", nil, child)
-            hb:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
-            hb:SetScript("OnClick", function(btn)
-                local d = ns.db
-                d.collapsed = d.collapsed or {}
-                d.collapsed[btn.key] = (not d.collapsed[btn.key]) or nil
-                ns:UpdateUI()
-            end)
-            hb:SetScript("OnEnter", function(btn)
-                GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
-                GameTooltip:AddLine(L["클릭하면 이 슬롯을 접거나 펼칩니다."], 1, 1, 1)
-                GameTooltip:Show()
-            end)
-            hb:SetScript("OnLeave", function() GameTooltip:Hide() end)
-            hbtns[hdrN] = hb
-        end
+        local hb = hbtns[hdrN] or CreateSlotHeader(hdrN)
         hb.key = band.group.key
+        hb.label:SetText(band.group.label)
+        hb.action:SetText(collapsed and L["펼치기"] or L["접기"])
+        hb.indicator:SetTexture(collapsed and "Interface\\Buttons\\UI-PlusButton-Up" or "Interface\\Buttons\\UI-MinusButton-Up")
         hb:ClearAllPoints()
         hb:SetPoint("TOPLEFT", child, "TOPLEFT", 2, -y)
         hb:SetSize(colW * nCols - 4, HEADER_H)
