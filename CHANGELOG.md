@@ -1,5 +1,9 @@
 # Changelog - Best Gear Finder
 
+## 1.0.13
+- Made per-slot collapse controls easier to find with full-width headers, plus/minus icons and explicit Collapse/Expand labels.
+- Collapsing a slot hides its items in every role column; saved states remain intact across refreshes and window rebuilds.
+
 ## 1.0.12
 - Added quest sources for ten missing rewards, including Cultist's Chestguard, Charged Leather Bracers, Tidebringer's Claw, Wolfsbane and the Cozy Sleeping Bag ranged weapons.
 - Corrected faction, class, race, minimum acceptance level and selected/additional reward metadata for the affected quests.
