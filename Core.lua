@@ -1057,6 +1057,10 @@ function ns:QuestTitle(s)
         if s.titleEn then return s.titleEn end
         if s.inst and not s.inst:find("[\128-\255]") then return s.inst end
     end
+    local info = QuestInfo(s.qid)
+    if L["요구 레벨"] == "요구 레벨" and info and type(info.title) == "string" and info.title:find("[\128-\255]") then
+        return info.title
+    end
     local t
     if C_QuestLog and C_QuestLog.GetTitleForQuestID then
         local ok, r = pcall(C_QuestLog.GetTitleForQuestID, s.qid)

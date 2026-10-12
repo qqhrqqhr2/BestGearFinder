@@ -1,5 +1,11 @@
 # Changelog - Best Gear Finder
 
+## 1.0.12
+- Added quest sources for ten missing rewards, including Cultist's Chestguard, Charged Leather Bracers, Tidebringer's Claw, Wolfsbane and the Cozy Sleeping Bag ranged weapons.
+- Corrected faction, class, race, minimum acceptance level and selected/additional reward metadata for the affected quests.
+- Shaman weapon rewards now follow their faction-specific quests; the Sleeping Bag ranged rewards are available to both factions.
+- Added Korean quest titles and prefer bundled Korean titles when the client returns an English fallback.
+
 ## 1.0.11
 - Updated level 30 BiS lists for all nine classes, including replacement picks for the changed Magram and Gelkis rewards.
 - Added sources for Mindslicer, Beggar's Leggings and Seadog's Battered Cuffs; corrected their faction and selected/additional reward types.
