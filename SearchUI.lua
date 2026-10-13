@@ -615,6 +615,7 @@ local function Build()
     local tchild = CreateFrame("Frame", nil, tscroll)
     tchild:SetSize(TREE_W - 4, 1)
     tscroll:SetScrollChild(tchild)
+    if ns.SetWheelStep then ns.SetWheelStep(tscroll, 40) end
     TREE = BuildTree()
     -- 언어를 바꿔 창을 다시 만들 때, 이전에 고른 분류를 같은 위치에서 다시 찾는다
     if filter.catKey then
@@ -682,6 +683,7 @@ local function Build()
     listChild = CreateFrame("Frame", nil, scroll)
     listChild:SetSize(W - TREE_W - 90, 1)
     scroll:SetScrollChild(listChild)
+    if ns.SetWheelStep then ns.SetWheelStep(scroll, ROW_H * 1.5) end
 
     local function DefaultRange()
         local lo, hi = ns:GetRange()

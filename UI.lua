@@ -33,6 +33,20 @@ local function SolidBG(f)
 end
 ns.SolidBG = SolidBG
 
+-- 휠 한 칸에 창 절반씩 넘어가는 기본 동작 대신, 정해진 픽셀만큼 부드럽게 움직인다.
+function ns.SetWheelStep(sf, step)
+    if not sf or not sf.SetScript then return end
+    local bar = sf.ScrollBar or (sf.GetName and sf:GetName() and _G[sf:GetName() .. "ScrollBar"])
+    if bar then bar.scrollStep = step end
+    sf:EnableMouseWheel(true)
+    sf:SetScript("OnMouseWheel", function(self, delta)
+        local range = self:GetVerticalScrollRange() or 0
+        local v = (self:GetVerticalScroll() or 0) - delta * step * (IsShiftKeyDown and IsShiftKeyDown() and 4 or 1)
+        if v < 0 then v = 0 elseif v > range then v = range end
+        self:SetVerticalScroll(v)
+    end)
+end
+
 function ns.ThemeWindow(f)
     f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
@@ -661,6 +675,7 @@ local function BuildFrame()
     child = CreateFrame("Frame", nil, scroll)
     child:SetSize(colW * nCols, 10)
     scroll:SetScrollChild(child)
+    ns.SetWheelStep(scroll, ROW_H)
 
     for i = 1, nCols - 1 do
         local d = child:CreateTexture(nil, "BACKGROUND")
