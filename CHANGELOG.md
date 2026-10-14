@@ -1,5 +1,9 @@
 # Changelog - Best Gear Finder
 
+## 1.0.14
+- Mouse-wheel scrolling is slower and smoother: one item row per notch in the main window and about one and a half rows in the search window.
+- Hold Shift while scrolling to move four times faster through long lists.
+
 ## 1.0.13
 - Made per-slot collapse controls easier to find with full-width headers, plus/minus icons and explicit Collapse/Expand labels.
 - Collapsing a slot hides its items in every role column; saved states remain intact across refreshes and window rebuilds.
