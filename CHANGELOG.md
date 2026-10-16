@@ -1,5 +1,10 @@
 # Changelog - Best Gear Finder
 
+## Unreleased
+- Updated level 30 PvE BiS picks and alternatives for warriors, paladins, rogues, shamans and druids across 17 faction/spec combinations.
+- Registered 34 newly catalogued equipment IDs, including items missing from an existing same-build discovery cache. Items without a confirmed source follow the existing unknown-source filters.
+- Added drop sources for Wispy Cloak, Ghostly Bracers and Farmer's Shovel.
+
 ## 1.0.14
 - Mouse-wheel scrolling is slower and smoother: one item row per notch in the main window and about one and a half rows in the search window.
 - Hold Shift while scrolling to move four times faster through long lists.

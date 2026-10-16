@@ -241,7 +241,7 @@ local function ScanNewItems()
     end
     st.scanned = nil
     st.new = 0
-    for _, id in ipairs(ids) do
+    local function Include(id)
         if ns.index[id] == nil then
             local rec = MakeRecord(id)
             if rec then
@@ -253,6 +253,10 @@ local function ScanNewItems()
             end
         end
     end
+    -- 새로 확인된 장비는 같은 게임 빌드의 기존 탐색 캐시에도 즉시 반영한다.
+    -- 출처가 있는 장비는 앞서 인덱싱되므로 출처 불명으로 덮어쓰지 않는다.
+    for _, id in ipairs((ns.ItemSources and ns.ItemSources.items) or {}) do Include(id) end
+    for _, id in ipairs(ids) do Include(id) end
 end
 
 -- Forever 전용 획득처 (ForeverExtra.lua): CMaNGOS 1.12 DB에 없는 아이템의 출처

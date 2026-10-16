@@ -2,6 +2,43 @@
 -- Gear sources noted on guide pages (dungeon drops, quest rewards with faction, vendors, rares, world drops).
 local _, ns = ...
 ns.ItemSources = {
+    -- 확인된 장비 ID. 능력치·등급·착용 조건은 클라이언트에서 읽는다.
+    items = {
+        763, -- Ice-covered Bracers
+        2546, -- Royal Frostmane Girdle
+        3008, -- Wendigo Fur Cloak
+        3322, -- Wispy Cloak
+        3323, -- Ghostly Bracers
+        3334, -- Farmer's Shovel
+        6147, -- Ratty Old Belt
+        6201, -- Lithe Boots
+        6202, -- Fingerless Gloves
+        18611, -- Gnarlpine Leggings
+        270060, -- Excavator Gauntlets
+        273654, -- Crystal Thread Cloak
+        279388, -- Brewer's Bracers
+        279888, -- Tidesoaked Leggings
+        279889, -- Naga Priestess's Mantle
+        282653, -- Dissolved Locket
+        282710, -- Dun Garok Rifle
+        282716, -- Imbued Scaled Cuffs
+        284459, -- Dendweller's Hammer
+        284667, -- Flame Seared Sword
+        284717, -- Royal Satyr Slicer
+        286746, -- Shal'ma's Shawl
+        286749, -- Wrathroot
+        286977, -- Sword of the Fallen
+        286981, -- Death Bindings
+        287059, -- Footman's Pocketknife
+        287060, -- Rezlak's Spare Knife
+        287061, -- Cheese Knife
+        287062, -- Darnassian Knife
+        287064, -- Beastculler's Knife
+        287066, -- Wizlo's Tuning Wrench
+        287067, -- Dragonmaw Skinflayer
+        287069, -- Yeti Skinner
+        287071, -- Goblin Switchblade
+    },
     -- 현재 장비 추천에 사용하는 퀘스트 수락 조건.
     questInfo = {
         [98] = { level=35, minLevel=22 },
@@ -61,6 +98,9 @@ ns.ItemSources = {
         [96016] = { level=40, minLevel=30, title="폭풍우의 병기", titleEn="The Tempest's Weapons" },
     },
     drops = {
+        [3322] = { {inst="티리스팔 숲", boss="Lost Soul"} },
+        [3323] = { {inst="티리스팔 숲", boss="Tormented Spirit"} },
+        [3334] = { {inst="티리스팔 숲", boss="Farmer Solliden"} },
         [720] = { {inst="World drop", boss=""} },
         [776] = { {inst="가시덩굴 우리", boss="Trash"} },
         [872] = { {inst="죽음의 폐광", boss="Rhahk'Zor"} },
